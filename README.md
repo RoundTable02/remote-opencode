@@ -75,7 +75,7 @@ npx remote-opencode
 ### Install from source
 
 ```bash
-git clone https://github.com/<your-username>/remote-opencode.git
+git clone https://github.com/RoundTable02/remote-opencode.git
 cd remote-opencode
 npm install
 npm run build
@@ -109,9 +109,7 @@ Before using remote-opencode, you need to create a Discord Application and Bot. 
 3. Enter a name (e.g., "Remote OpenCode")
 4. Copy the **Application ID** — you'll need this later
 
-<!-- SCREENSHOT: Discord Developer Portal - New Application button -->
-<!-- ![Create Application](./docs/images/01-create-application.png) -->
-*Screenshot placeholder: Discord Developer Portal showing "New Application" button*
+<img width="800" alt="image" src="https://github.com/user-attachments/assets/ca2e7ff3-91e7-4d66-93dc-c166189c0107" />
 
 ### Step 2: Create Bot & Get Token
 
@@ -120,9 +118,6 @@ Before using remote-opencode, you need to create a Discord Application and Bot. 
 3. **Copy the token immediately** — it's only shown once!
 4. Keep this token secret — never share it publicly
 
-<!-- SCREENSHOT: Bot section showing Reset Token button -->
-<!-- ![Get Bot Token](./docs/images/02-bot-token.png) -->
-*Screenshot placeholder: Bot settings page with token section highlighted*
 
 ### Step 3: Enable Required Intents
 
@@ -133,9 +128,7 @@ Still in the **"Bot"** section, scroll down to **"Privileged Gateway Intents"** 
 
 Click **"Save Changes"**
 
-<!-- SCREENSHOT: Privileged Gateway Intents toggles -->
-<!-- ![Enable Intents](./docs/images/03-intents.png) -->
-*Screenshot placeholder: Intents section with required toggles enabled*
+<img width="1500" alt="image" src="https://github.com/user-attachments/assets/d20406ff-26ad-4204-9771-b157c340846a" />
 
 ### Step 4: Configure Bot Permissions
 
@@ -164,34 +157,14 @@ The bot needs specific permissions to function properly. You can configure permi
 
 5. Copy the generated URL at the bottom — this is your bot invite link!
 
-<!-- SCREENSHOT: OAuth2 URL Generator showing selected permissions -->
-<!-- ![OAuth2 Permissions](./docs/images/03b-oauth2-permissions.png) -->
-*Screenshot placeholder: OAuth2 URL Generator with bot permissions selected*
 
 #### Option B: Manual Permission Calculation
 
 If you're building the URL manually, use this permission value:
 
 ```
-https://discord.com/api/oauth2/authorize?client_id=YOUR_CLIENT_ID&permissions=343932274624&scope=bot%20applications.commands
+https://discord.com/api/oauth2/authorize?client_id=YOUR_CLIENT_ID&permissions=311385214016&integration_type=0&scope=bot+applications.commands
 ```
-
-**Permission Breakdown (343932274624):**
-
-| Permission | Value | Purpose |
-|------------|-------|---------|
-| View Channels | 1024 | Access channels and read messages |
-| Send Messages | 2048 | Send messages to channels |
-| Create Public Threads | 68719476736 | Create threads for each `/opencode` command |
-| Send Messages in Threads | 274877906944 | Reply within created threads |
-| Embed Links | 16384 | Send rich embed messages with formatting |
-| Read Message History | 65536 | Access previous messages for context |
-| Add Reactions | 64 | Add button components (uses emoji reactions) |
-| Use Slash Commands | 2147483648 | Register and respond to slash commands |
-
-**Optional Permissions (not required):**
-- **Attach Files** (32768) — Only if you want to upload files
-- **Mention @everyone** (131072) — Only if bot needs to ping everyone
 
 **Important:** The URL must include `applications.commands` scope for slash commands to work!
 
@@ -211,16 +184,15 @@ https://discord.com/api/oauth2/authorize?client_id=YOUR_CLIENT_ID&permissions=34
 Use the URL generated in Step 4 (OAuth2 URL Generator), or construct it manually:
 
 ```
-https://discord.com/api/oauth2/authorize?client_id=YOUR_CLIENT_ID&permissions=343932274624&scope=bot%20applications.commands
+https://discord.com/api/oauth2/authorize?client_id=YOUR_CLIENT_ID&permissions=218900185540&scope=bot%20applications.commands
 ```
 
 1. Replace `YOUR_CLIENT_ID` with your Application ID
 2. Open the URL in your browser
 3. Select your server and authorize
 
-<!-- SCREENSHOT: Bot authorization page -->
-<!-- ![Authorize Bot](./docs/images/05-authorize.png) -->
-*Screenshot placeholder: Discord OAuth2 authorization page*
+<img width="184" height="530" alt="스크린샷 2026-02-03 오전 2 34 31" src="https://github.com/user-attachments/assets/8ecc2a28-05e5-494f-834f-95d9d0e4e730" />
+
 
 ---
 
@@ -477,7 +449,7 @@ The bot maintains persistent sessions. If you encounter issues:
 ### Run from source
 
 ```bash
-git clone https://github.com/<your-username>/remote-opencode.git
+git clone https://github.com/RoundTable02/remote-opencode.git
 cd remote-opencode
 npm install
 
