@@ -306,6 +306,43 @@ Start isolated work on a new branch with its own worktree.
 
 This is perfect for working on multiple features simultaneously without branch switching.
 
+### `/code` — Toggle Passthrough Mode
+
+Enable passthrough mode in a thread to send messages directly to OpenCode without slash commands.
+
+```
+/code
+```
+
+**How it works:**
+1. Run `/code` in any thread to enable passthrough mode
+2. Type messages naturally — they're sent directly to OpenCode
+3. Run `/code` again to disable
+
+**Example:**
+```
+You: /code
+Bot: ✅ Passthrough mode enabled for this thread.
+     Your messages will be sent directly to OpenCode.
+
+You: Add a dark mode toggle to settings
+Bot: 📌 Prompt: Add a dark mode toggle to settings
+     [streaming response...]
+
+You: Now add a keyboard shortcut for it
+Bot: 📌 Prompt: Now add a keyboard shortcut for it
+     [streaming response...]
+
+You: /code
+Bot: ❌ Passthrough mode disabled.
+```
+
+**Features:**
+- 📱 **Mobile-friendly** — no more typing slash commands on phone
+- 🧵 **Thread-scoped** — only affects the specific thread, not the whole channel
+- ⏳ **Busy indicator** — shows ⏳ reaction if previous task is still running
+- 🔒 **Safe** — ignores bot messages (no infinite loops)
+
 ---
 
 ## Usage Workflow
@@ -341,6 +378,8 @@ Perfect for when you're away from your desk:
 3. Use `/opencode` to send tasks
 4. Watch real-time progress
 5. Use the **Interrupt** button if needed
+
+**Pro tip:** Enable passthrough mode with `/code` in a thread for an even smoother mobile experience — just type messages directly without slash commands!
 
 ### Team Collaboration Workflow
 
@@ -504,13 +543,15 @@ src/
 ├── bot.ts                 # Discord client initialization
 ├── commands/              # Slash command definitions
 │   ├── opencode.ts        # Main AI interaction command
+│   ├── code.ts            # Passthrough mode toggle
 │   ├── work.ts            # Worktree management
 │   ├── setpath.ts         # Project registration
 │   ├── projects.ts        # List projects
 │   └── use.ts             # Channel binding
 ├── handlers/              # Interaction handlers
 │   ├── interactionHandler.ts
-│   └── buttonHandler.ts
+│   ├── buttonHandler.ts
+│   └── messageHandler.ts  # Passthrough message handling
 ├── services/              # Core business logic
 │   ├── serveManager.ts    # OpenCode process management
 │   ├── sessionManager.ts  # Session state management
