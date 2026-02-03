@@ -23,6 +23,12 @@ program
       process.exit(1);
     }
     
+    try {
+      await deployCommands();
+    } catch {
+      console.log(pc.dim('Command deployment skipped (will retry on next start)'));
+    }
+    
     await startBot();
   });
 
