@@ -1,7 +1,7 @@
 import { readFileSync, writeFileSync, existsSync, mkdirSync } from 'node:fs';
 import { join } from 'node:path';
 import { homedir } from 'node:os';
-import type { DataStore, ProjectConfig, ChannelBinding, ThreadSession, WorktreeMapping } from '../types/index.js';
+import type { DataStore, ProjectConfig, ChannelBinding, ThreadSession, WorktreeMapping, PassthroughThread } from '../types/index.js';
 
 const CONFIG_DIR = join(homedir(), '.remote-opencode');
 const DATA_FILE = join(CONFIG_DIR, 'data.json');
@@ -163,4 +163,48 @@ export function getAllWorktreeMappings(): WorktreeMapping[] {
 export function getWorktreeMappingsByProject(projectPath: string): WorktreeMapping[] {
   const data = loadData();
   return data.worktreeMappings?.filter(m => m.projectPath === projectPath) ?? [];
+}
+
+export function setPassthroughMode(threadId: string, enabled: boolean, userId: string): void {
+  const data = loadData();
+  if (!data.passthroughThreads) {
+    data.passthroughThreads = [];
+  }
+  const existing = data.passthroughThreads.findIndex(p => p.threadId === threadId);
+  if (existing >= 0) {
+    data.passthroughThreads[existing] = {
+      threadId,
+      enabled,
+      enabledBy: userId,
+      enabledAt: Date.now()
+    };
+  } else {
+    data.passthroughThreads.push({
+      threadId,
+      enabled,
+      enabledBy: userId,
+      enabledAt: Date.now()
+    });
+  }
+  saveData(data);
+}
+
+export function getPassthroughMode(threadId: string): PassthroughThread | undefined {
+  const data = loadData();
+  return data.passthroughThreads?.find(p => p.threadId === threadId);
+}
+
+export function isPassthroughEnabled(threadId: string): boolean {
+  const passthrough = getPassthroughMode(threadId);
+  return passthrough?.enabled ?? false;
+}
+
+export function removePassthroughMode(threadId: string): boolean {
+  const data = loadData();
+  if (!data.passthroughThreads) return false;
+  const idx = data.passthroughThreads.findIndex(p => p.threadId === threadId);
+  if (idx < 0) return false;
+  data.passthroughThreads.splice(idx, 1);
+  saveData(data);
+  return true;
 }

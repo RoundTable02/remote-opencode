@@ -15,6 +15,7 @@ export interface DataStore {
   bindings: ChannelBinding[];
   threadSessions?: ThreadSession[];
   worktreeMappings?: WorktreeMapping[];
+  passthroughThreads?: PassthroughThread[];
 }
 
 export interface TextPart {
@@ -51,4 +52,11 @@ export interface WorktreeMapping {
   projectPath: string;
   description: string;
   createdAt: number;
+}
+
+export interface PassthroughThread {
+  threadId: string;
+  enabled: boolean;
+  enabledBy: string;  // userId
+  enabledAt: number;
 }

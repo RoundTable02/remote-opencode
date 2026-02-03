@@ -2,6 +2,7 @@ import { Client, GatewayIntentBits, Events } from 'discord.js';
 import pc from 'picocolors';
 import { getBotConfig } from './services/configStore.js';
 import { handleInteraction } from './handlers/interactionHandler.js';
+import { handleMessageCreate } from './handlers/messageHandler.js';
 import * as serveManager from './services/serveManager.js';
 
 export async function startBot(): Promise<void> {
@@ -12,7 +13,11 @@ export async function startBot(): Promise<void> {
   }
   
   const client = new Client({
-    intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMessages]
+    intents: [
+      GatewayIntentBits.Guilds, 
+      GatewayIntentBits.GuildMessages,
+      GatewayIntentBits.MessageContent
+    ]
   });
   
   client.once(Events.ClientReady, (c) => {
@@ -20,6 +25,7 @@ export async function startBot(): Promise<void> {
   });
   
   client.on(Events.InteractionCreate, handleInteraction);
+  client.on(Events.MessageCreate, handleMessageCreate);
   
   function gracefulShutdown(signal: string) {
     console.log(pc.yellow(`\n${signal} received. Shutting down gracefully...`));
