@@ -2,6 +2,7 @@
 import { Command } from 'commander';
 import pc from 'picocolors';
 import { createRequire } from 'module';
+import updateNotifier from 'update-notifier';
 import { runSetupWizard } from './setup/wizard.js';
 import { deployCommands } from './setup/deploy.js';
 import { startBot } from './bot.js';
@@ -9,6 +10,8 @@ import { hasBotConfig, getConfigDir } from './services/configStore.js';
 
 const require = createRequire(import.meta.url);
 const pkg = require('../package.json');
+
+updateNotifier({ pkg }).notify({ isGlobal: true });
 
 const program = new Command();
 
