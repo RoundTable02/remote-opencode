@@ -1,6 +1,6 @@
 {
   "name": "remote-opencode",
-  "version": "1.0.4",
+  "version": "1.0.5",
   "description": "Discord bot for remote OpenCode CLI access",
   "main": "dist/src/index.js",
   "bin": {
