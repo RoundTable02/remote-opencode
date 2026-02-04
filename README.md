@@ -48,6 +48,7 @@ The bot runs on your development machine alongside OpenCode. When you send a com
 - [Configuration](#configuration)
 - [Troubleshooting](#troubleshooting)
 - [Development](#development)
+- [Changelog](#changelog)
 - [License](#license)
 
 ---
@@ -505,6 +506,32 @@ src/
     ├── messageFormatter.ts
     └── threadHelper.ts
 ```
+
+---
+
+## Changelog
+
+See [CHANGELOG.md](CHANGELOG.md) for a full history of changes.
+
+### [1.0.10] - 2026-02-04
+
+#### Added
+- New `/setports` slash command to configure the port range for OpenCode server instances.
+
+#### Fixed
+- Fixed Windows-specific spawning issue (targeting `opencode.cmd`).
+- Resolved `spawn EINVAL` errors on Windows.
+- Improved server reliability and suppressed `DEP0190` security warnings.
+
+### [1.0.9] - 2026-02-04
+
+#### Added
+- New `/model` slash command to set AI models per channel.
+- Support for `--model` flag in OpenCode server instances.
+
+#### Fixed
+- Fixed connection timeout issues.
+- Standardized internal communication to use `127.0.0.1`.
 
 ---
 
