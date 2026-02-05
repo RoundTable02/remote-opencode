@@ -1,0 +1,274 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches: [main, master, develop]
+    tags:
+      - 'v*'
+  pull_request:
+    branches: [main, master, develop]
+    types: [opened, synchronize, reopened]
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Deployment environment'
+        required: true
+        default: 'development'
+        type: choice
+        options:
+          - development
+          - production
+
+env:
+  NODE_VERSION: '22' # Node 22+ for SEA support
+
+jobs:
+  # ============================================================
+  # PR Validation (on PRs and main pushes)
+  # ============================================================
+  pr-validation:
+    name: 🔍 PR Validation
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    if: github.event_name == 'pull_request' || (github.ref == 'refs/heads/main' && github.event_name == 'push')
+
+    steps:
+      - name: Validate PR Format
+        uses: actions/github-script@v7
+        with:
+          script: |
+            if (context.eventName === 'pull_request') {
+              const title = context.payload.pull_request.title;
+              const validPrefixes = ['feat:', 'fix:', 'docs:', 'style:', 'refactor:', 'perf:', 'test:', 'chore:', 'ci:', 'build:'];
+              const isValid = validPrefixes.some(prefix => title.toLowerCase().startsWith(prefix));
+
+              if (!isValid) {
+                core.setFailed(`PR title should start with one of: ${validPrefixes.join(', ')}`);
+              } else {
+                console.log('✅ PR title format is valid');
+              }
+            }
+
+      - name: Check PR Size
+        uses: actions/github-script@v7
+        with:
+          script: |
+            if (context.eventName === 'pull_request') {
+              const additions = context.payload.pull_request.additions;
+              const deletions = context.payload.pull_request.deletions;
+              const totalChanges = additions + deletions;
+
+              console.log(`PR Size: +${additions} -${deletions} (~${totalChanges} total)`);
+
+              if (totalChanges > 1500) {
+                core.setFailed(`Very large PR detected (${totalChanges} changes). Please break into smaller PRs.`);
+              } else if (totalChanges > 800) {
+                core.warning(`Large PR detected (${totalChanges} changes). Consider breaking into smaller PRs.`);
+              }
+            }
+
+  # ============================================================
+  # Code Quality Checks
+  # ============================================================
+  quality-checks:
+    name: 🔬 Code Quality
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run ESLint
+        id: lint
+        run: npm run lint
+        continue-on-error: true
+
+      - name: TypeScript Check
+        id: ts-check
+        run: npm run type-check
+        continue-on-error: true
+
+      - name: Prettier Check
+        id: format
+        run: npm run format:check
+        continue-on-error: true
+
+      - name: Quality Summary
+        run: |
+          echo "## 🔬 Code Quality Results" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Check | Status |" >> $GITHUB_STEP_SUMMARY
+          echo "|-------|--------|" >> $GITHUB_STEP_SUMMARY
+          echo "| ESLint | ${{ steps.lint.outcome == 'success' && '✅ Passed' || '⚠️ Issues Found' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| TypeScript | ${{ steps.ts-check.outcome == 'success' && '✅ Passed' || '⚠️ Issues Found' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Prettier Format | ${{ steps.format.outcome == 'success' && '✅ Passed' || '⚠️ Issues Found' }} |" >> $GITHUB_STEP_SUMMARY
+
+  # ============================================================
+  # Unit Tests
+  # ============================================================
+  unit-tests:
+    name: 🧪 Unit Tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run Tests
+        id: tests
+        run: npm test
+
+      - name: Test Summary
+        if: always()
+        run: |
+          echo "## 🧪 Unit Test Results" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Test Suite | Status |" >> $GITHUB_STEP_SUMMARY
+          echo "|------------|--------|" >> $GITHUB_STEP_SUMMARY
+          echo "| Vitest | ${{ steps.tests.outcome == 'success' && '✅ Passed' || '❌ Failed' }} |" >> $GITHUB_STEP_SUMMARY
+
+  # ============================================================
+  # Build Standalone EXE
+  # ============================================================
+  build:
+    name: 🏗️ Build Standalone EXE
+    runs-on: windows-latest
+    timeout-minutes: 15
+    needs: [quality-checks, unit-tests]
+    if: github.event_name == 'push' || github.event_name == 'workflow_dispatch' || github.event_name == 'pull_request'
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build Standalone EXE
+        run: npm run build:sea
+
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: remote-opencode-windows
+          path: dist/remote-opencode.exe
+          retention-days: 7
+
+  # ============================================================
+  # Release (Only on Tags)
+  # ============================================================
+  release:
+    name: 🚀 Create Release
+    runs-on: ubuntu-latest
+    needs: build
+    if: startsWith(github.ref, 'refs/tags/v')
+    permissions:
+      contents: write
+
+    steps:
+      - name: Download Artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: remote-opencode-windows
+          path: .
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: remote-opencode.exe
+          name: Release ${{ github.ref_name }}
+          draft: false
+          prerelease: false
+          generate_release_notes: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  # ============================================================
+  # Quality Gate - Final Summary
+  # ============================================================
+  quality-gate:
+    name: 📊 Quality Gate
+    needs: [quality-checks, unit-tests, build]
+    runs-on: ubuntu-latest
+    if: always()
+    permissions:
+      pull-requests: write
+      issues: write
+      contents: read
+
+    steps:
+      - name: Pipeline Summary
+        run: |
+          echo "## 🚀 CI/CD Pipeline Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Stage | Status |" >> $GITHUB_STEP_SUMMARY
+          echo "|-------|--------|" >> $GITHUB_STEP_SUMMARY
+          echo "| 🔬 Code Quality | ${{ needs.quality-checks.result == 'success' && '✅ Passed' || '❌ Failed' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| 🧪 Unit Tests | ${{ needs.unit-tests.result == 'success' && '✅ Passed' || '❌ Failed' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| 🏗️ Build | ${{ needs.build.result == 'success' && '✅ Passed' || '❌ Failed' }} |" >> $GITHUB_STEP_SUMMARY
+
+      - name: Check Quality Gate
+        run: |
+          if [ "${{ needs.build.result }}" != "success" ]; then
+            echo "❌ Quality Gate FAILED: Build did not succeed"
+            exit 1
+          fi
+          echo "✅ Quality Gate PASSED"
+
+      - name: Comment on PR
+        if: github.event_name == 'pull_request' && always()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const buildStatus = "${{ needs.build.result }}";
+            const qualityStatus = "${{ needs.quality-checks.result }}";
+            const testStatus = "${{ needs.unit-tests.result }}";
+            
+            const body = `## ${buildStatus === 'success' ? '✅' : '❌'} CI/CD Pipeline ${buildStatus === 'success' ? 'Passed' : 'Failed'}
+                
+            | Stage | Status |
+            |-------|--------|
+            | 🔬 Code Quality | ${qualityStatus === 'success' ? '✅ Passed' : '⚠️ Issues'} |
+            | 🧪 Unit Tests | ${testStatus === 'success' ? '✅ Passed' : '❌ Failed'} |
+            | 🏗️ Build | ${buildStatus === 'success' ? '✅ Passed' : '❌ Failed'} |
+
+            ${buildStatus === 'success' ? 'PR is ready for review! 🎉' : 'Please fix the issues above before merging.'}`;
+
+            try {
+              github.rest.issues.createComment({
+                issue_number: context.issue.number,
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                body: body
+              });
+            } catch (error) {
+              console.log('Could not post comment:', error);
+            }

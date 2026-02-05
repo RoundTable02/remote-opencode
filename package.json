@@ -16,6 +16,9 @@
   "scripts": {
     "build": "tsc",
     "build:sea": "node scripts/build-sea.js",
+    "lint": "eslint . --ext .ts",
+    "type-check": "tsc --noEmit",
+    "format:check": "prettier --check \"**/*.{ts,json,md}\"",
     "start": "node --no-deprecation --no-warnings dist/src/cli.js start",
     "dev": "node --no-warnings --loader ts-node/esm src/cli.ts",
     "deploy-commands": "npm run build && node dist/src/cli.js deploy",
@@ -48,7 +51,11 @@
     "@types/eventsource": "^1.1.15",
     "@types/node": "^22.13.1",
     "@types/update-notifier": "^6.0.8",
+    "@typescript-eslint/eslint-plugin": "^8.54.0",
+    "@typescript-eslint/parser": "^8.54.0",
     "esbuild": "^0.25.0",
+    "eslint": "^9.39.2",
+    "prettier": "^3.8.1",
     "ts-node": "^10.9.2",
     "typescript": "^5.9.3",
     "vitest": "^4.0.18"
