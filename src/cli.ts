@@ -13,6 +13,7 @@ import { runSetupWizard } from './setup/wizard.js';
 import { deployCommands } from './setup/deploy.js';
 import { startBot } from './bot.js';
 import { hasBotConfig, getConfigDir } from './services/configStore.js';
+import * as p from '@clack/prompts';
 
 // Robust way to get package info that works in SEA
 let pkg: any;
@@ -104,14 +105,26 @@ program.action(async () => {
   if (!hasBotConfig()) {
     console.log(pc.bold('\nWelcome to remote-opencode!\n'));
     console.log('It looks like this is your first time running the bot.');
-    console.log(`Run ${pc.cyan('remote-opencode setup')} to configure your Discord bot.\n`);
+
+    const shouldStartSetup = await p.confirm({
+      message: 'Would you like to run the setup wizard now?',
+      initialValue: true,
+    });
+
+    if (shouldStartSetup && !p.isCancel(shouldStartSetup)) {
+      await runSetupWizard();
+      return;
+    }
+
+    p.outro(`Run ${pc.cyan('remote-opencode setup')} later to configure your Discord bot.`);
+
     console.log('Available commands:');
     console.log(`  ${pc.cyan('remote-opencode setup')}   - Interactive setup wizard`);
     console.log(`  ${pc.cyan('remote-opencode start')}   - Start the bot`);
     console.log(`  ${pc.cyan('remote-opencode deploy')}  - Deploy slash commands`);
     console.log(`  ${pc.cyan('remote-opencode config')}  - Show configuration`);
     console.log();
-    process.exit(0);
+    return;
   }
 
   await startBot();

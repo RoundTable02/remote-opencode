@@ -67,6 +67,7 @@ The easiest way to use **remote-opencode** is to download the standalone `.exe` 
 
 - **No Node.js required** — Everything is bundled inside the binary
 - **Portable** — Run it from any folder
+- **Guided Setup** — Automatically helps you configure the bot on first run
 
 ### Install via npm
 
@@ -104,14 +105,11 @@ npm run build:sea
 ## Quick Start
 
 ```bash
-# Step 1: Run the interactive setup wizard
-remote-opencode setup
-
-# Step 2: Start the Discord bot
-remote-opencode start
+# Simply run the bot
+remote-opencode
 ```
 
-That's it! Now use Discord slash commands to interact with OpenCode.
+If it's your first time, the bot will automatically detect that it's unconfigured and offer to start the **Interactive Setup Wizard**.
 
 ---
 
@@ -124,7 +122,7 @@ The setup wizard (`remote-opencode setup`) guides you through the entire process
 3. **Generates the invite link** automatically and opens it in your browser
 4. **Deploys slash commands** to your server
 
-Just run `remote-opencode setup` and follow the prompts — no manual URL copying needed!
+Just follow the prompts — no manual URL copying needed!
 
 <details>
 <summary>📖 Manual setup reference (click to expand)</summary>
@@ -146,13 +144,13 @@ If you prefer manual setup or need to troubleshoot:
 
 ## CLI Commands
 
-| Command                  | Description                                          |
-| ------------------------ | ---------------------------------------------------- |
-| `remote-opencode`        | Start the bot (shows setup guide if not configured)  |
-| `remote-opencode setup`  | Interactive setup wizard — configures bot token, IDs |
-| `remote-opencode start`  | Start the Discord bot                                |
-| `remote-opencode deploy` | Deploy/update slash commands to Discord              |
-| `remote-opencode config` | Display current configuration info                   |
+| Command                  | Description                                     |
+| ------------------------ | ----------------------------------------------- |
+| `remote-opencode`        | Start the bot (triggers guided setup if needed) |
+| `remote-opencode setup`  | Interactive setup wizard — configures bot token |
+| `remote-opencode start`  | Start the Discord bot                           |
+| `remote-opencode deploy` | Deploy/update slash commands to Discord         |
+| `remote-opencode config` | Display current configuration info              |
 
 ---
 
@@ -541,7 +539,7 @@ The bot maintains persistent sessions. If you encounter issues:
 ### Run from source
 
 ```bash
-git clone https://github.com/RoundTable02/remote-opencode.git
+git clone https://github.com/Dayclone/remote-opencode.git
 cd remote-opencode
 npm install
 
@@ -606,6 +604,17 @@ src/
 
 See [CHANGELOG.md](CHANGELOG.md) for a full history of changes.
 
+### [1.2.1] - 2026-02-05
+
+#### Added
+
+- **Guided Onboarding**: Added an interactive prompt that automatically offers to run the setup wizard if the bot is launched without any configuration.
+- **Improved Windows Experience**: Enhanced the standalone EXE behavior to prevent the terminal window from closing immediately after showing help text.
+
+#### Changed
+
+- **CLI Robustness**: Consolidated default actions in the CLI to improve first-time user experience.
+
 ### [1.2.0] - 2026-02-05
 
 #### Added
@@ -626,30 +635,6 @@ See [CHANGELOG.md](CHANGELOG.md) for a full history of changes.
 
 - **Automated Message Queuing**: Added a new system to queue multiple prompts in a thread. If the bot is busy, new messages are automatically queued and processed sequentially.
 - **Queue Management**: New `/queue` slash command suite to list, clear, pause, resume, and configure queue settings.
-
-### [1.0.10] - 2026-02-04
-
-#### Added
-
-- New `/setports` slash command to configure the port range for OpenCode server instances.
-
-#### Fixed
-
-- Fixed Windows-specific spawning issue (targeting `opencode.cmd`).
-- Resolved `spawn EINVAL` errors on Windows.
-- Improved server reliability and suppressed `DEP0190` security warnings.
-
-### [1.0.9] - 2026-02-04
-
-#### Added
-
-- New `/model` slash command to set AI models per channel.
-- Support for `--model` flag in OpenCode server instances.
-
-#### Fixed
-
-- Fixed connection timeout issues.
-- Standardized internal communication to use `127.0.0.1`.
 
 ---
 
