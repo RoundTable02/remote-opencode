@@ -10,7 +10,15 @@ import { startBot } from './bot.js';
 import { hasBotConfig, getConfigDir } from './services/configStore.js';
 
 const require = createRequire(import.meta.url);
-const pkg = require('../../package.json');
+// In dev mode (src/cli.ts), package.json is one level up
+// In production (dist/src/cli.js), package.json is two levels up
+const pkg = (() => {
+  try {
+    return require('../../package.json');
+  } catch {
+    return require('../package.json');
+  }
+})();
 
 updateNotifier({ pkg }).notify({ isGlobal: true });
 
