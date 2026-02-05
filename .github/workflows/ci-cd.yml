@@ -93,12 +93,36 @@ jobs:
       - name: 📦 Install dependencies
         run: npm ci
 
-      - name: 🏷️ Get Version from package.json
-        id: get_version
+      - name: 🏷️ Get Version and Extract Changelog
+        id: get_release_info
         shell: bash
         run: |
           VERSION=$(node -p "require('./package.json').version")
           echo "VERSION=$VERSION" >> $GITHUB_OUTPUT
+
+          # Extract the section from CHANGELOG.md for the current version
+          # It looks for the header ## [VERSION] and takes everything until the next ## [
+          # Then we remove the last line (the next header) and any trailing link if it's there
+          # Using a temporary node script for robust cross-platform parsing
+          cat << 'EOF' > extract_changelog.js
+          const fs = require('fs');
+          const content = fs.readFileSync('CHANGELOG.md', 'utf8');
+          const version = process.argv[2];
+          const regex = new RegExp(`## \\[${version.replace(/\./g, '\\.')}\\][\\s\\S]*?(?=## \\[|$)`);
+          const match = content.match(regex);
+          if (match) {
+            let notes = match[0].trim();
+            // Remove the version header itself from the body
+            notes = notes.replace(/^## \[.*\] - .*\n/, '').trim();
+            fs.writeFileSync('release_notes.md', notes);
+            console.log('Changelog extracted successfully');
+          } else {
+            fs.writeFileSync('release_notes.md', 'New version release.');
+            console.log('Version section not found in CHANGELOG.md');
+          }
+          EOF
+
+          node extract_changelog.js $VERSION
 
       - name: 🔨 Build Standalone EXE
         run: npm run build:sea
@@ -119,13 +143,15 @@ jobs:
         with:
           files: dist/remote-opencode.exe
           # Dynamic name using the version from package.json
-          name: ${{ startsWith(github.ref, 'refs/tags/v') && github.ref_name || format('Release v{0}', steps.get_version.outputs.VERSION) }}
+          name: ${{ startsWith(github.ref, 'refs/tags/v') && github.ref_name || format('Release v{0}', steps.get_release_info.outputs.VERSION) }}
           # Use the tag from git if available, otherwise fallback to 'latest'
           tag_name: ${{ startsWith(github.ref, 'refs/tags/v') && github.ref_name || 'latest' }}
+          body_path: release_notes.md
           draft: false
-          prerelease: false # Force it to show as a "Main Release"
-          generate_release_notes: true # This will populate the body with the commit log
-          make_latest: true # Ensures this is the one users see first
+          prerelease: false
+          append_body: true # Append the "Full Changelog" link below our extracted notes
+          generate_release_notes: true # This will append the contributor list and link below our custom body
+          make_latest: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
@@ -143,7 +169,7 @@ jobs:
             - 🧪 Unit Tests: Passed
             - 🏗️ Build EXE: Standalone Windows binary generated successfully.
 
-            This PR is ready to be merged. Once merged to main, a new **Main Release** will be automatically created! 🎉`;
+            This PR is ready to be merged. Once merged to main, a new **Main Release** will be automatically created with notes from CHANGELOG.md! 🎉`;
 
             github.rest.issues.createComment({
               issue_number: context.issue.number,
