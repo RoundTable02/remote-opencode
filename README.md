@@ -267,6 +267,33 @@ Enable automatic worktree creation for a project. When enabled, new `/opencode` 
 - 🚀 **Create PR button** — easily create pull requests from worktree
 - ⚡ **Per-project setting** — enable/disable independently for each project
 
+### `/model` — Manage AI Models
+
+Manage which AI model is used for the current channel.
+
+```
+/model list
+/model set name:google/gemini-2.0-flash
+```
+
+| Subcommand | Description |
+|------------|-------------|
+| `list` | List all available models from OpenCode CLI |
+| `set` | Set the model to use in this channel |
+
+### `/setports` — Configure Port Range
+
+Set the range of ports the bot can use for OpenCode server instances.
+
+```
+/setports min:3000 max:4000
+```
+
+| Parameter | Description |
+|-----------|-------------|
+| `min` | Minimum port number (>= 1024) |
+| `max` | Maximum port number (<= 65535) |
+
 ### `/queue` — Manage Message Queue
 
 Control the automated job queue for the current thread.
@@ -524,6 +551,15 @@ src/
 ## Changelog
 
 See [CHANGELOG.md](CHANGELOG.md) for a full history of changes.
+
+### [1.1.1] - 2026-02-05
+
+#### Added
+- Documentation for `/model` and `/setports` slash commands in README.
+
+#### Security
+- **Hardened Server Binding**: All OpenCode server instances are now strictly bound to `127.0.0.1` to prevent unauthorized remote access.
+- **Improved Testing**: Added regression tests for server lifecycle and port management.
 
 ### [1.1.0] - 2026-02-05
 

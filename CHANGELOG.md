@@ -2,6 +2,15 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.1.1] - 2026-02-05
+
+### Added
+- Documentation for `/model` and `/setports` slash commands in README.
+- Regression tests for server lifecycle and port management.
+
+### Changed
+- **Hardened Server Binding**: All OpenCode server instances are now strictly bound to `127.0.0.1` to prevent unauthorized remote access.
+
 ## [1.1.0] - 2026-02-05
 
 ### Added
@@ -15,7 +24,6 @@ All notable changes to this project will be documented in this file.
 
 ### Changed
 - **Refactored Execution Logic**: Moved core prompt execution to a dedicated `executionService` for better reliability and code reuse.
-- **Hardened Server Binding**: Reverted `opencode serve` to use default `127.0.0.1` binding (previously `0.0.0.0`) and updated port availability checks to match, preventing local network exposure.
 
 ## [1.0.11] - 2026-02-04
 
