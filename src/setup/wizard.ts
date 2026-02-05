@@ -8,19 +8,19 @@ const DISCORD_DEV_URL = 'https://discord.com/developers/applications';
 const BOT_PERMISSIONS = '2147534848';
 const BOT_SCOPES = 'bot applications.commands';
 
-function validateApplicationId(value: string): string | undefined {
+function validateApplicationId(value: string | undefined): string | undefined {
   if (!value) return 'Application ID is required';
   if (!/^\d{17,20}$/.test(value)) return 'Invalid format (should be 17-20 digits)';
   return undefined;
 }
 
-function validateToken(value: string): string | undefined {
+function validateToken(value: string | undefined): string | undefined {
   if (!value) return 'Bot token is required';
   if (value.length < 50) return 'Invalid token format (too short)';
   return undefined;
 }
 
-function validateGuildId(value: string): string | undefined {
+function validateGuildId(value: string | undefined): string | undefined {
   if (!value) return 'Guild ID is required';
   if (!/^\d{17,20}$/.test(value)) return 'Invalid format (should be 17-20 digits)';
   return undefined;
