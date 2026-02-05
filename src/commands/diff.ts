@@ -10,10 +10,8 @@ export const diff = {
   data: new SlashCommandBuilder()
     .setName('diff')
     .setDescription('Show current changes in the project')
-    .addBooleanOption(option => 
-      option.setName('staged')
-        .setDescription('Show only staged changes')
-        .setRequired(false)
+    .addBooleanOption((option) =>
+      option.setName('staged').setDescription('Show only staged changes').setRequired(false),
     ),
 
   async execute(interaction: ChatInputCommandInteraction) {
@@ -21,7 +19,7 @@ export const diff = {
 
     const threadId = interaction.channelId;
     const parentChannelId = (interaction.channel as any)?.parentId || threadId;
-    
+
     const worktreeMapping = getWorktreeMapping(threadId);
     const projectPath = worktreeMapping?.worktreePath || getChannelProjectPath(parentChannelId);
 
@@ -35,7 +33,7 @@ export const diff = {
 
     try {
       const { stdout } = await execAsync(gitCmd, { cwd: projectPath });
-      
+
       if (!stdout || stdout.trim().length === 0) {
         await interaction.editReply('✅ No changes found.');
         return;
@@ -51,7 +49,9 @@ export const diff = {
       await interaction.editReply(`\`\`\`diff\n${output}\n\`\`\``);
     } catch (error) {
       console.error('Diff error:', error);
-      await interaction.editReply(`❌ Failed to get diff: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      await interaction.editReply(
+        `❌ Failed to get diff: ${error instanceof Error ? error.message : 'Unknown error'}`,
+      );
     }
   },
 };

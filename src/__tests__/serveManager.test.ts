@@ -8,7 +8,7 @@ vi.mock('node:child_process', () => ({
 
 vi.mock('node:net', () => ({
   Server: class MockServer extends EventEmitter {
-    listen(port: number, callback?: () => void) {
+    listen(_port: number, _callback?: () => void) {
       setImmediate(() => this.emit('listening'));
       return this;
     }
@@ -66,7 +66,7 @@ describe('serveManager', () => {
         expect.objectContaining({
           cwd: projectPath,
           shell: true,
-        })
+        }),
       );
     });
 
@@ -102,7 +102,7 @@ describe('serveManager', () => {
       expect(spawn).toHaveBeenCalledWith(
         'opencode',
         ['serve', '--port', '20000'],
-        expect.anything()
+        expect.anything(),
       );
     });
 
@@ -118,7 +118,7 @@ describe('serveManager', () => {
       mockProc.emit('exit', 0, null);
 
       // Wait for async exit handler
-      await new Promise(resolve => setTimeout(resolve, 10));
+      await new Promise((resolve) => setTimeout(resolve, 10));
 
       // Instance should still exist but be marked as exited
       const state = serveManager.getInstanceState(projectPath);
@@ -137,7 +137,7 @@ describe('serveManager', () => {
       mockProc.stderr?.emit('data', Buffer.from('Error: opencode command not found'));
       mockProc.emit('exit', 1, null);
 
-      await new Promise(resolve => setTimeout(resolve, 10));
+      await new Promise((resolve) => setTimeout(resolve, 10));
 
       const state = serveManager.getInstanceState(projectPath);
       expect(state?.exited).toBe(true);
@@ -154,7 +154,7 @@ describe('serveManager', () => {
 
       mockProc.emit('error', new Error('spawn opencode ENOENT'));
 
-      await new Promise(resolve => setTimeout(resolve, 10));
+      await new Promise((resolve) => setTimeout(resolve, 10));
 
       const state = serveManager.getInstanceState(projectPath);
       expect(state?.exited).toBe(true);
@@ -165,12 +165,12 @@ describe('serveManager', () => {
       vi.mocked(spawn).mockImplementation(() => createMockProcess());
 
       const projectPath = '/test/project';
-      const port1 = await serveManager.spawnServe(projectPath);
+      const _port1 = await serveManager.spawnServe(projectPath);
 
       // Get the mock process and mark it as exited
       const mockProc1 = vi.mocked(spawn).mock.results[0].value;
       mockProc1.emit('exit', 1, null);
-      await new Promise(resolve => setTimeout(resolve, 10));
+      await new Promise((resolve) => setTimeout(resolve, 10));
 
       // Should spawn a new process
       const port2 = await serveManager.spawnServe(projectPath);
@@ -224,9 +224,7 @@ describe('serveManager', () => {
     it('should stop all serve instances', async () => {
       const mockProc1 = createMockProcess();
       const mockProc2 = createMockProcess();
-      vi.mocked(spawn)
-        .mockReturnValueOnce(mockProc1)
-        .mockReturnValueOnce(mockProc2);
+      vi.mocked(spawn).mockReturnValueOnce(mockProc1).mockReturnValueOnce(mockProc2);
 
       await serveManager.spawnServe('/project1');
       await serveManager.spawnServe('/project2');
@@ -259,9 +257,9 @@ describe('serveManager', () => {
       vi.mocked(fetch).mockResolvedValue({ ok: true } as Response);
 
       const promise = serveManager.waitForReady(14097);
-      
+
       await vi.runAllTimersAsync();
-      
+
       await expect(promise).resolves.toBeUndefined();
       expect(fetch).toHaveBeenCalledWith('http://127.0.0.1:14097/session');
     });
@@ -286,8 +284,10 @@ describe('serveManager', () => {
       vi.mocked(fetch).mockRejectedValue(new Error('Connection refused'));
 
       const promise = serveManager.waitForReady(14097, 1000);
-      
-      const wrappedPromise = expect(promise).rejects.toThrow('Service at port 14097 failed to become ready within 1000ms. Check if \'opencode serve\' is working correctly.');
+
+      const wrappedPromise = expect(promise).rejects.toThrow(
+        "Service at port 14097 failed to become ready within 1000ms. Check if 'opencode serve' is working correctly.",
+      );
 
       await vi.advanceTimersByTimeAsync(1500);
 
@@ -309,11 +309,11 @@ describe('serveManager', () => {
       mockProc.emit('exit', 1, null);
 
       // Wait for exit handler to process
-      await new Promise(resolve => setTimeout(resolve, 10));
+      await new Promise((resolve) => setTimeout(resolve, 10));
 
       // Now waitForReady should fail fast with the error message
       await expect(serveManager.waitForReady(port, 30000, projectPath)).rejects.toThrow(
-        'opencode serve failed to start: Error: Failed to bind to port'
+        'opencode serve failed to start: Error: Failed to bind to port',
       );
 
       vi.useFakeTimers();
@@ -324,8 +324,10 @@ describe('serveManager', () => {
 
       // Without projectPath, can't detect early exit
       const promise = serveManager.waitForReady(14097, 1000);
-      
-      const wrappedPromise = expect(promise).rejects.toThrow('Service at port 14097 failed to become ready within 1000ms');
+
+      const wrappedPromise = expect(promise).rejects.toThrow(
+        'Service at port 14097 failed to become ready within 1000ms',
+      );
 
       await vi.advanceTimersByTimeAsync(1500);
 

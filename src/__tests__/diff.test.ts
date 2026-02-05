@@ -41,7 +41,9 @@ describe('diff command', () => {
 
     await diff.execute(mockInteraction);
 
-    expect(mockInteraction.editReply).toHaveBeenCalledWith(expect.stringContaining('❌ No project bound'));
+    expect(mockInteraction.editReply).toHaveBeenCalledWith(
+      expect.stringContaining('❌ No project bound'),
+    );
   });
 
   it('should show diff for project path', async () => {

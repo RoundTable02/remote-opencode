@@ -35,19 +35,27 @@ function parseModelString(model: string): { providerID: string; modelID: string 
   };
 }
 
-export async function sendPrompt(port: number, sessionId: string, text: string, model?: string): Promise<void> {
+export async function sendPrompt(
+  port: number,
+  sessionId: string,
+  text: string,
+  model?: string,
+): Promise<void> {
   const url = `http://127.0.0.1:${port}/session/${sessionId}/prompt_async`;
-  const body: { parts: { type: string; text: string }[]; model?: { providerID: string; modelID: string } } = {
+  const body: {
+    parts: { type: string; text: string }[];
+    model?: { providerID: string; modelID: string };
+  } = {
     parts: [{ type: 'text', text }],
   };
-  
+
   if (model) {
     const parsedModel = parseModelString(model);
     if (parsedModel) {
       body.model = parsedModel;
     }
   }
-  
+
   const response = await fetch(url, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -79,11 +87,11 @@ export async function listSessions(port: number): Promise<string[]> {
       method: 'GET',
       headers: { 'Content-Type': 'application/json' },
     });
-    
+
     if (!response.ok) {
       return [];
     }
-    
+
     const data = await response.json();
     if (Array.isArray(data)) {
       return data.map((s: { id: string }) => s.id);
@@ -106,13 +114,20 @@ export async function abortSession(port: number, sessionId: string): Promise<boo
   }
 }
 
-export function getSessionForThread(threadId: string): { sessionId: string; projectPath: string; port: number } | undefined {
+export function getSessionForThread(
+  threadId: string,
+): { sessionId: string; projectPath: string; port: number } | undefined {
   const session = dataStore.getThreadSession(threadId);
   if (!session) return undefined;
   return { sessionId: session.sessionId, projectPath: session.projectPath, port: session.port };
 }
 
-export function setSessionForThread(threadId: string, sessionId: string, projectPath: string, port: number): void {
+export function setSessionForThread(
+  threadId: string,
+  sessionId: string,
+  projectPath: string,
+  port: number,
+): void {
   const now = Date.now();
   dataStore.setThreadSession({
     threadId,

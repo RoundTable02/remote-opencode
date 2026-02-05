@@ -4,9 +4,9 @@ import { runPrompt } from './executionService.js';
 import * as sessionManager from './sessionManager.js';
 
 export async function processNextInQueue(
-  channel: TextBasedChannel, 
-  threadId: string, 
-  parentChannelId: string
+  channel: TextBasedChannel,
+  threadId: string,
+  parentChannelId: string,
 ): Promise<void> {
   const settings = dataStore.getQueueSettings(threadId);
   if (settings.paused) return;

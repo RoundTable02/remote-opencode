@@ -1,5 +1,11 @@
 import { describe, it, expect } from 'vitest';
-import { parseSSEEvent, extractTextFromPart, accumulateText, formatOutput, stripAnsi } from '../utils/messageFormatter.js';
+import {
+  parseSSEEvent,
+  extractTextFromPart,
+  accumulateText,
+  formatOutput,
+  stripAnsi,
+} from '../utils/messageFormatter.js';
 
 describe('messageFormatter', () => {
   describe('stripAnsi', () => {
@@ -16,9 +22,9 @@ describe('messageFormatter', () => {
         properties: {
           part: {
             type: 'text',
-            text: 'Hello'
-          }
-        }
+            text: 'Hello',
+          },
+        },
       });
       const result = parseSSEEvent(data);
       expect(result).not.toBeNull();
@@ -35,8 +41,8 @@ describe('messageFormatter', () => {
       const data = JSON.stringify({
         type: 'session_start',
         properties: {
-          sessionID: '12345'
-        }
+          sessionID: '12345',
+        },
       });
       const result = parseSSEEvent(data);
       expect(result?.properties.sessionID).toBe('12345');
@@ -76,8 +82,10 @@ describe('messageFormatter', () => {
 
   describe('formatOutput (existing functionality)', () => {
     it('should work for OpenCode JSON output with newlines preserved', () => {
-      const buffer = JSON.stringify({ type: 'text', part: { text: 'Hello' } }) + '\n' +
-                     JSON.stringify({ type: 'text', part: { text: 'World' } });
+      const buffer =
+        JSON.stringify({ type: 'text', part: { text: 'Hello' } }) +
+        '\n' +
+        JSON.stringify({ type: 'text', part: { text: 'World' } });
       expect(formatOutput(buffer)).toBe('Hello\nWorld');
     });
 

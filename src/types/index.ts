@@ -34,7 +34,6 @@ export interface QueueSettings {
   freshContext: boolean;
 }
 
-
 export interface TextPart {
   id: string;
   sessionID: string;
@@ -77,6 +76,6 @@ export interface WorktreeMapping {
 export interface PassthroughThread {
   threadId: string;
   enabled: boolean;
-  enabledBy: string;  // userId
+  enabledBy: string; // userId
   enabledAt: number;
 }

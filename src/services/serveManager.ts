@@ -1,4 +1,4 @@
-import { spawn, type ChildProcess } from 'node:child_process';
+import { spawn } from 'node:child_process';
 import { Server } from 'node:net';
 import type { ServeInstance } from '../types/index.js';
 import { getPortConfig } from './configStore.js';
@@ -11,17 +11,17 @@ const instances = new Map<string, ServeInstance>();
 function isPortAvailable(port: number): Promise<boolean> {
   return new Promise((resolve) => {
     const server = new Server();
-    
+
     server.once('error', () => {
       resolve(false);
     });
-    
+
     server.once('listening', () => {
       server.close(() => {
         resolve(true);
       });
     });
-    
+
     // Bind to 127.0.0.1 explicitly to match opencode serve's default binding
     server.listen(port, '127.0.0.1');
   });
@@ -29,7 +29,7 @@ function isPortAvailable(port: number): Promise<boolean> {
 
 async function isOrphanedServerRunning(port: number): Promise<boolean> {
   try {
-    const response = await fetch(`http://127.0.0.1:${port}/session`, {
+    const _response = await fetch(`http://127.0.0.1:${port}/session`, {
       signal: AbortSignal.timeout(1000),
     });
     // If we get any response, there's already a server running
@@ -45,33 +45,26 @@ async function findAvailablePort(): Promise<number> {
   const max = config?.max ?? DEFAULT_PORT_MAX;
 
   for (let port = min; port <= max; port++) {
-    const usedPorts = new Set(Array.from(instances.values()).filter(i => !i.exited).map(i => i.port));
+    const usedPorts = new Set(
+      Array.from(instances.values())
+        .filter((i) => !i.exited)
+        .map((i) => i.port),
+    );
     if (usedPorts.has(port)) {
       continue;
     }
-    
+
     // Check if there's an orphaned opencode server on this port
     if (await isOrphanedServerRunning(port)) {
       continue;
     }
-    
+
     // Check if we can bind to this port
     if (await isPortAvailable(port)) {
       return port;
     }
   }
   throw new Error(`No available ports in range ${min}-${max}`);
-}
-
-async function isServerResponding(port: number): Promise<boolean> {
-  try {
-    const response = await fetch(`http://127.0.0.1:${port}/session`, {
-      signal: AbortSignal.timeout(2000),
-    });
-    return response.ok;
-  } catch {
-    return false;
-  }
 }
 
 function cleanupInstance(key: string): void {
@@ -91,14 +84,14 @@ export async function spawnServe(projectPath: string, model?: string): Promise<n
   }
 
   const port = await findAvailablePort();
-  
+
   // Note: opencode serve doesn't support --model flag
   // Model selection must happen at session/prompt level, not server startup
   const args = ['serve', '--port', port.toString()];
-  
+
   console.log(`[opencode] Spawning: opencode ${args.join(' ')}`);
   console.log(`[opencode] Working directory: ${projectPath}`);
-  
+
   const child = spawn('opencode', args, {
     cwd: projectPath,
     env: { ...process.env },
@@ -126,7 +119,7 @@ export async function spawnServe(projectPath: string, model?: string): Promise<n
     }
     console.log(`[opencode stdout] ${text.trim()}`);
   });
-  
+
   child.stderr?.on('data', (data) => {
     const text = data.toString();
     stderrBuffer += text;
@@ -143,7 +136,7 @@ export async function spawnServe(projectPath: string, model?: string): Promise<n
       inst.exitCode = code;
       if (code !== 0 && code !== null) {
         // Combine stdout and stderr for error message
-        const combinedOutput = (stderrBuffer.trim() || stdoutBuffer.trim());
+        const combinedOutput = stderrBuffer.trim() || stdoutBuffer.trim();
         inst.exitError = combinedOutput || `Process exited with code ${code}`;
         console.error(`[opencode] Process exited with code ${code}`);
         if (combinedOutput) {
@@ -182,7 +175,12 @@ export function stopServe(projectPath: string, model?: string): boolean {
   return true;
 }
 
-export async function waitForReady(port: number, timeout: number = 30000, projectPath?: string, model?: string): Promise<void> {
+export async function waitForReady(
+  port: number,
+  timeout: number = 30000,
+  projectPath?: string,
+  model?: string,
+): Promise<void> {
   const start = Date.now();
   const url = `http://127.0.0.1:${port}/session`;
   const key = projectPath ? (model ? `${projectPath}:${model}` : projectPath) : null;
@@ -192,7 +190,8 @@ export async function waitForReady(port: number, timeout: number = 30000, projec
     if (key) {
       const instance = instances.get(key);
       if (instance?.exited) {
-        const errorMsg = instance.exitError || `opencode serve exited with code ${instance.exitCode}`;
+        const errorMsg =
+          instance.exitError || `opencode serve exited with code ${instance.exitCode}`;
         cleanupInstance(key);
         throw new Error(`opencode serve failed to start: ${errorMsg}`);
       }
@@ -203,8 +202,7 @@ export async function waitForReady(port: number, timeout: number = 30000, projec
       if (response.ok) {
         return;
       }
-    } catch {
-    }
+    } catch {}
     await new Promise((resolve) => setTimeout(resolve, 1000));
   }
 
@@ -218,7 +216,9 @@ export async function waitForReady(port: number, timeout: number = 30000, projec
     }
   }
 
-  throw new Error(`Service at port ${port} failed to become ready within ${timeout}ms. Check if 'opencode serve' is working correctly.`);
+  throw new Error(
+    `Service at port ${port} failed to become ready within ${timeout}ms. Check if 'opencode serve' is working correctly.`,
+  );
 }
 
 export function stopAll(): void {
@@ -235,7 +235,10 @@ export function getAllInstances(): Array<{ key: string; port: number }> {
   }));
 }
 
-export function getInstanceState(projectPath: string, model?: string): { exited: boolean; exitCode?: number | null; exitError?: string } | undefined {
+export function getInstanceState(
+  projectPath: string,
+  model?: string,
+): { exited: boolean; exitCode?: number | null; exitError?: string } | undefined {
   const key = model ? `${projectPath}:${model}` : projectPath;
   const instance = instances.get(key);
   if (!instance) return undefined;

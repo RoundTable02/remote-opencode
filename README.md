@@ -16,7 +16,6 @@
 
 ## How It Works
 
-
 ```
 ┌─────────────────┐    Discord API    ┌─────────────────┐
 │  Your Phone /   │ ◄──────────────► │  Discord Bot    │
@@ -139,13 +138,13 @@ If you prefer manual setup or need to troubleshoot:
 
 ## CLI Commands
 
-| Command | Description |
-|---------|-------------|
-| `remote-opencode` | Start the bot (shows setup guide if not configured) |
-| `remote-opencode setup` | Interactive setup wizard — configures bot token, IDs |
-| `remote-opencode start` | Start the Discord bot |
-| `remote-opencode deploy` | Deploy/update slash commands to Discord |
-| `remote-opencode config` | Display current configuration info |
+| Command                  | Description                                          |
+| ------------------------ | ---------------------------------------------------- |
+| `remote-opencode`        | Start the bot (shows setup guide if not configured)  |
+| `remote-opencode setup`  | Interactive setup wizard — configures bot token, IDs |
+| `remote-opencode start`  | Start the Discord bot                                |
+| `remote-opencode deploy` | Deploy/update slash commands to Discord              |
+| `remote-opencode config` | Display current configuration info                   |
 
 ---
 
@@ -162,11 +161,12 @@ View the git diff of the current project or active worktree.
 /diff staged:True
 ```
 
-| Parameter | Description |
-|-----------|-------------|
+| Parameter | Description                                     |
+| --------- | ----------------------------------------------- |
 | `staged`  | Optional. If `True`, shows only staged changes. |
 
 **Features:**
+
 - 🌳 **Worktree Aware** — Automatically shows diffs for the specific worktree if used in a `/work` thread.
 - 📝 **Formatted** — Uses syntax-highlighted code blocks.
 - ✂️ **Smart Truncation** — Safely handles large diffs to stay within Discord's message limits.
@@ -179,10 +179,10 @@ Register a local project path with an alias for easy reference.
 /setpath alias:myapp path:/Users/you/projects/my-app
 ```
 
-| Parameter | Description |
-|-----------|-------------|
-| `alias` | Short name for the project (e.g., `myapp`, `backend`) |
-| `path` | Absolute path to the project on your machine |
+| Parameter | Description                                           |
+| --------- | ----------------------------------------------------- |
+| `alias`   | Short name for the project (e.g., `myapp`, `backend`) |
+| `path`    | Absolute path to the project on your machine          |
 
 ### `/projects` — List Registered Projects
 
@@ -211,6 +211,7 @@ The main command — sends a prompt to OpenCode and streams the response.
 ```
 
 **Features:**
+
 - 🧵 **Auto-creates a thread** for each conversation
 - ⚡ **Real-time streaming** — see output as it's generated (1-second updates)
 - ⏸️ **Interrupt button** — stop the current task if needed
@@ -224,12 +225,13 @@ Start isolated work on a new branch with its own worktree.
 /work branch:feature/dark-mode description:Implement dark mode toggle
 ```
 
-| Parameter | Description |
-|-----------|-------------|
-| `branch` | Git branch name (will be sanitized) |
-| `description` | Brief description of the work |
+| Parameter     | Description                         |
+| ------------- | ----------------------------------- |
+| `branch`      | Git branch name (will be sanitized) |
+| `description` | Brief description of the work       |
 
 **Features:**
+
 - 🌳 Creates a new git worktree for isolated work
 - 🧵 Opens a dedicated thread for the task
 - 🗑️ **Delete button** — removes worktree and archives thread
@@ -246,11 +248,13 @@ Enable passthrough mode in a thread to send messages directly to OpenCode withou
 ```
 
 **How it works:**
+
 1. Run `/code` in any thread to enable passthrough mode
 2. Type messages naturally — they're sent directly to OpenCode
 3. Run `/code` again to disable
 
 **Example:**
+
 ```
 You: /code
 Bot: ✅ Passthrough mode enabled for this thread.
@@ -269,6 +273,7 @@ Bot: ❌ Passthrough mode disabled.
 ```
 
 **Features:**
+
 - 📱 **Mobile-friendly** — no more typing slash commands on phone
 - 🧵 **Thread-scoped** — only affects the specific thread, not the whole channel
 - ⏳ **Busy indicator** — shows ⏳ reaction if previous task is still running
@@ -283,11 +288,13 @@ Enable automatic worktree creation for a project. When enabled, new `/opencode` 
 ```
 
 **How it works:**
+
 1. Run `/autowork` in a channel bound to a project
 2. The setting toggles on/off for that project
 3. When enabled, new sessions automatically create worktrees with branch names like `auto/abc12345-1738600000000`
 
 **Features:**
+
 - 🌳 **Automatic isolation** — each session gets its own branch and worktree
 - 📱 **Mobile-friendly** — no need to type `/work` with branch names
 - 🗑️ **Delete button** — removes worktree when done
@@ -303,10 +310,10 @@ Manage which AI model is used for the current channel.
 /model set name:google/gemini-2.0-flash
 ```
 
-| Subcommand | Description |
-|------------|-------------|
-| `list` | List all available models from OpenCode CLI |
-| `set` | Set the model to use in this channel |
+| Subcommand | Description                                 |
+| ---------- | ------------------------------------------- |
+| `list`     | List all available models from OpenCode CLI |
+| `set`      | Set the model to use in this channel        |
 
 ### `/setports` — Configure Port Range
 
@@ -316,10 +323,10 @@ Set the range of ports the bot can use for OpenCode server instances.
 /setports min:3000 max:4000
 ```
 
-| Parameter | Description |
-|-----------|-------------|
-| `min` | Minimum port number (>= 1024) |
-| `max` | Maximum port number (<= 65535) |
+| Parameter | Description                    |
+| --------- | ------------------------------ |
+| `min`     | Minimum port number (>= 1024)  |
+| `max`     | Maximum port number (<= 65535) |
 
 ### `/queue` — Manage Message Queue
 
@@ -334,32 +341,36 @@ Control the automated job queue for the current thread.
 ```
 
 **How it works:**
+
 1. Send multiple messages to a thread (or use `/opencode` multiple times)
 2. If the bot is busy, it reacts with `📥` and adds the task to the queue
 3. Once the current job is done, the bot automatically picks up the next one
 
 **Settings:**
+
 - `continue_on_failure`: If `True`, the bot moves to the next task even if the current one fails.
 - `fresh_context`: If `True` (default), the AI forgets previous chat history for each new queued task to improve performance, while maintaining the same code state.
 
 ---
-
 
 ## Usage Workflow
 
 ### Basic Workflow
 
 1. **Register your project:**
+
    ```
    /setpath alias:webapp path:/home/user/my-webapp
    ```
 
 2. **Bind to a channel:**
+
    ```
    /use alias:webapp
    ```
 
 3. **Start coding remotely:**
+
    ```
    /opencode prompt:Refactor the authentication module to use JWT
    ```
@@ -395,6 +406,7 @@ Share AI coding sessions with your team:
 Perfect for "setting and forgetting" several tasks:
 
 1. **Send multiple instructions:**
+
    ```
    You: Refactor the API
    Bot: [Starts working]
@@ -410,15 +422,14 @@ Perfect for "setting and forgetting" several tasks:
 
 ---
 
-
 ## Configuration
 
 All configuration is stored in `~/.remote-opencode/`:
 
-| File | Purpose |
-|------|---------|
-| `config.json` | Bot credentials (token, client ID, guild ID) |
-| `data.json` | Project paths, channel bindings, session data |
+| File          | Purpose                                       |
+| ------------- | --------------------------------------------- |
+| `config.json` | Bot credentials (token, client ID, guild ID)  |
+| `data.json`   | Project paths, channel bindings, session data |
 
 ### config.json Structure
 
@@ -445,8 +456,8 @@ All configuration is stored in `~/.remote-opencode/`:
 }
 ```
 
-| Field | Description |
-|-------|-------------|
+| Field                     | Description                                               |
+| ------------------------- | --------------------------------------------------------- |
 | `projects[].autoWorktree` | Optional. When `true`, new sessions auto-create worktrees |
 
 ---
@@ -470,6 +481,7 @@ All configuration is stored in `~/.remote-opencode/`:
 ### "No project set for this channel"
 
 You need to bind a project to the channel:
+
 ```
 /setpath alias:myproject path:/path/to/project
 /use alias:myproject
@@ -478,6 +490,7 @@ You need to bind a project to the channel:
 ### Commands not appearing in Discord
 
 Slash commands can take up to an hour to propagate globally. For faster updates:
+
 1. Kick the bot from your server
 2. Re-invite it
 3. Run `remote-opencode deploy`
@@ -494,6 +507,7 @@ Slash commands can take up to an hour to propagate globally. For faster updates:
 ### Session connection issues
 
 The bot maintains persistent sessions. If you encounter issues:
+
 1. Start a new thread with `/opencode` instead of continuing in an old one
 2. Restart the bot: `remote-opencode start`
 
@@ -582,15 +596,18 @@ See [CHANGELOG.md](CHANGELOG.md) for a full history of changes.
 ### [1.1.0] - 2026-02-05
 
 #### Added
+
 - **Automated Message Queuing**: Added a new system to queue multiple prompts in a thread. If the bot is busy, new messages are automatically queued and processed sequentially.
 - **Queue Management**: New `/queue` slash command suite to list, clear, pause, resume, and configure queue settings.
 
 ### [1.0.10] - 2026-02-04
 
 #### Added
+
 - New `/setports` slash command to configure the port range for OpenCode server instances.
 
 #### Fixed
+
 - Fixed Windows-specific spawning issue (targeting `opencode.cmd`).
 - Resolved `spawn EINVAL` errors on Windows.
 - Improved server reliability and suppressed `DEP0190` security warnings.
@@ -598,10 +615,12 @@ See [CHANGELOG.md](CHANGELOG.md) for a full history of changes.
 ### [1.0.9] - 2026-02-04
 
 #### Added
+
 - New `/model` slash command to set AI models per channel.
 - Support for `--model` flag in OpenCode server instances.
 
 #### Fixed
+
 - Fixed connection timeout issues.
 - Standardized internal communication to use `127.0.0.1`.
 

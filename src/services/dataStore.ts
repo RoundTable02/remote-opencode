@@ -1,8 +1,15 @@
 import { readFileSync, writeFileSync, existsSync, mkdirSync } from 'node:fs';
 import { join } from 'node:path';
 import { homedir } from 'node:os';
-import type { DataStore, ProjectConfig, ChannelBinding, ThreadSession, WorktreeMapping, PassthroughThread, QueuedMessage, QueueSettings } from '../types/index.js';
-
+import type {
+  DataStore,
+  ProjectConfig,
+  ThreadSession,
+  WorktreeMapping,
+  PassthroughThread,
+  QueuedMessage,
+  QueueSettings,
+} from '../types/index.js';
 
 const CONFIG_DIR = join(homedir(), '.remote-opencode');
 const DATA_FILE = join(CONFIG_DIR, 'data.json');
@@ -33,7 +40,7 @@ function saveData(data: DataStore): void {
 
 export function addProject(alias: string, path: string): void {
   const data = loadData();
-  const existing = data.projects.findIndex(p => p.alias === alias);
+  const existing = data.projects.findIndex((p) => p.alias === alias);
   if (existing >= 0) {
     data.projects[existing].path = path;
   } else {
@@ -47,22 +54,22 @@ export function getProjects(): ProjectConfig[] {
 }
 
 export function getProject(alias: string): ProjectConfig | undefined {
-  return loadData().projects.find(p => p.alias === alias);
+  return loadData().projects.find((p) => p.alias === alias);
 }
 
 export function removeProject(alias: string): boolean {
   const data = loadData();
-  const idx = data.projects.findIndex(p => p.alias === alias);
+  const idx = data.projects.findIndex((p) => p.alias === alias);
   if (idx < 0) return false;
   data.projects.splice(idx, 1);
-  data.bindings = data.bindings.filter(b => b.projectAlias !== alias);
+  data.bindings = data.bindings.filter((b) => b.projectAlias !== alias);
   saveData(data);
   return true;
 }
 
 export function setChannelBinding(channelId: string, projectAlias: string, model?: string): void {
   const data = loadData();
-  const existing = data.bindings.findIndex(b => b.channelId === channelId);
+  const existing = data.bindings.findIndex((b) => b.channelId === channelId);
   if (existing >= 0) {
     data.bindings[existing].projectAlias = projectAlias;
     if (model !== undefined) {
@@ -76,7 +83,7 @@ export function setChannelBinding(channelId: string, projectAlias: string, model
 
 export function setChannelModel(channelId: string, model: string): boolean {
   const data = loadData();
-  const existing = data.bindings.findIndex(b => b.channelId === channelId);
+  const existing = data.bindings.findIndex((b) => b.channelId === channelId);
   if (existing >= 0) {
     data.bindings[existing].model = model;
     saveData(data);
@@ -86,12 +93,12 @@ export function setChannelModel(channelId: string, model: string): boolean {
 }
 
 export function getChannelModel(channelId: string): string | undefined {
-  const binding = loadData().bindings.find(b => b.channelId === channelId);
+  const binding = loadData().bindings.find((b) => b.channelId === channelId);
   return binding?.model;
 }
 
 export function getChannelBinding(channelId: string): string | undefined {
-  const binding = loadData().bindings.find(b => b.channelId === channelId);
+  const binding = loadData().bindings.find((b) => b.channelId === channelId);
   return binding?.projectAlias;
 }
 
@@ -104,7 +111,7 @@ export function getChannelProjectPath(channelId: string): string | undefined {
 
 export function getThreadSession(threadId: string): ThreadSession | undefined {
   const data = loadData();
-  return data.threadSessions?.find(s => s.threadId === threadId);
+  return data.threadSessions?.find((s) => s.threadId === threadId);
 }
 
 export function setThreadSession(session: ThreadSession): void {
@@ -112,7 +119,7 @@ export function setThreadSession(session: ThreadSession): void {
   if (!data.threadSessions) {
     data.threadSessions = [];
   }
-  const existing = data.threadSessions.findIndex(s => s.threadId === session.threadId);
+  const existing = data.threadSessions.findIndex((s) => s.threadId === session.threadId);
   if (existing >= 0) {
     data.threadSessions[existing] = session;
   } else {
@@ -123,7 +130,7 @@ export function setThreadSession(session: ThreadSession): void {
 
 export function updateThreadSessionLastUsed(threadId: string): void {
   const data = loadData();
-  const session = data.threadSessions?.find(s => s.threadId === threadId);
+  const session = data.threadSessions?.find((s) => s.threadId === threadId);
   if (session) {
     session.lastUsedAt = Date.now();
     saveData(data);
@@ -133,7 +140,7 @@ export function updateThreadSessionLastUsed(threadId: string): void {
 export function clearThreadSession(threadId: string): void {
   const data = loadData();
   if (data.threadSessions) {
-    data.threadSessions = data.threadSessions.filter(s => s.threadId !== threadId);
+    data.threadSessions = data.threadSessions.filter((s) => s.threadId !== threadId);
     saveData(data);
   }
 }
@@ -147,7 +154,7 @@ export function setWorktreeMapping(mapping: WorktreeMapping): void {
   if (!data.worktreeMappings) {
     data.worktreeMappings = [];
   }
-  const existing = data.worktreeMappings.findIndex(m => m.threadId === mapping.threadId);
+  const existing = data.worktreeMappings.findIndex((m) => m.threadId === mapping.threadId);
   if (existing >= 0) {
     data.worktreeMappings[existing] = mapping;
   } else {
@@ -158,18 +165,23 @@ export function setWorktreeMapping(mapping: WorktreeMapping): void {
 
 export function getWorktreeMapping(threadId: string): WorktreeMapping | undefined {
   const data = loadData();
-  return data.worktreeMappings?.find(m => m.threadId === threadId);
+  return data.worktreeMappings?.find((m) => m.threadId === threadId);
 }
 
-export function getWorktreeMappingByBranch(projectPath: string, branchName: string): WorktreeMapping | undefined {
+export function getWorktreeMappingByBranch(
+  projectPath: string,
+  branchName: string,
+): WorktreeMapping | undefined {
   const data = loadData();
-  return data.worktreeMappings?.find(m => m.projectPath === projectPath && m.branchName === branchName);
+  return data.worktreeMappings?.find(
+    (m) => m.projectPath === projectPath && m.branchName === branchName,
+  );
 }
 
 export function removeWorktreeMapping(threadId: string): boolean {
   const data = loadData();
   if (!data.worktreeMappings) return false;
-  const idx = data.worktreeMappings.findIndex(m => m.threadId === threadId);
+  const idx = data.worktreeMappings.findIndex((m) => m.threadId === threadId);
   if (idx < 0) return false;
   data.worktreeMappings.splice(idx, 1);
   saveData(data);
@@ -182,7 +194,7 @@ export function getAllWorktreeMappings(): WorktreeMapping[] {
 
 export function getWorktreeMappingsByProject(projectPath: string): WorktreeMapping[] {
   const data = loadData();
-  return data.worktreeMappings?.filter(m => m.projectPath === projectPath) ?? [];
+  return data.worktreeMappings?.filter((m) => m.projectPath === projectPath) ?? [];
 }
 
 export function setPassthroughMode(threadId: string, enabled: boolean, userId: string): void {
@@ -190,20 +202,20 @@ export function setPassthroughMode(threadId: string, enabled: boolean, userId: s
   if (!data.passthroughThreads) {
     data.passthroughThreads = [];
   }
-  const existing = data.passthroughThreads.findIndex(p => p.threadId === threadId);
+  const existing = data.passthroughThreads.findIndex((p) => p.threadId === threadId);
   if (existing >= 0) {
     data.passthroughThreads[existing] = {
       threadId,
       enabled,
       enabledBy: userId,
-      enabledAt: Date.now()
+      enabledAt: Date.now(),
     };
   } else {
     data.passthroughThreads.push({
       threadId,
       enabled,
       enabledBy: userId,
-      enabledAt: Date.now()
+      enabledAt: Date.now(),
     });
   }
   saveData(data);
@@ -211,7 +223,7 @@ export function setPassthroughMode(threadId: string, enabled: boolean, userId: s
 
 export function getPassthroughMode(threadId: string): PassthroughThread | undefined {
   const data = loadData();
-  return data.passthroughThreads?.find(p => p.threadId === threadId);
+  return data.passthroughThreads?.find((p) => p.threadId === threadId);
 }
 
 export function isPassthroughEnabled(threadId: string): boolean {
@@ -222,7 +234,7 @@ export function isPassthroughEnabled(threadId: string): boolean {
 export function removePassthroughMode(threadId: string): boolean {
   const data = loadData();
   if (!data.passthroughThreads) return false;
-  const idx = data.passthroughThreads.findIndex(p => p.threadId === threadId);
+  const idx = data.passthroughThreads.findIndex((p) => p.threadId === threadId);
   if (idx < 0) return false;
   data.passthroughThreads.splice(idx, 1);
   saveData(data);
@@ -231,7 +243,7 @@ export function removePassthroughMode(threadId: string): boolean {
 
 export function setProjectAutoWorktree(alias: string, enabled: boolean): boolean {
   const data = loadData();
-  const project = data.projects.find(p => p.alias === alias);
+  const project = data.projects.find((p) => p.alias === alias);
   if (!project) return false;
   project.autoWorktree = enabled;
   saveData(data);
@@ -275,11 +287,13 @@ export function clearQueue(threadId: string): void {
 
 export function getQueueSettings(threadId: string): QueueSettings {
   const data = loadData();
-  return data.queueSettings?.[threadId] ?? {
-    paused: false,
-    continueOnFailure: false,
-    freshContext: true
-  };
+  return (
+    data.queueSettings?.[threadId] ?? {
+      paused: false,
+      continueOnFailure: false,
+      freshContext: true,
+    }
+  );
 }
 
 export function updateQueueSettings(threadId: string, settings: Partial<QueueSettings>): void {
@@ -287,8 +301,7 @@ export function updateQueueSettings(threadId: string, settings: Partial<QueueSet
   if (!data.queueSettings) data.queueSettings = {};
   data.queueSettings[threadId] = {
     ...getQueueSettings(threadId),
-    ...settings
+    ...settings,
   };
   saveData(data);
 }
-

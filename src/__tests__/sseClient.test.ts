@@ -7,13 +7,13 @@ const mockEventSourceInstance = {
 };
 
 vi.mock('eventsource', () => {
-  const EventSourceMock: any = vi.fn().mockImplementation(function() {
+  const EventSourceMock: any = vi.fn().mockImplementation(function () {
     return mockEventSourceInstance;
   });
   EventSourceMock.OPEN = 1;
   EventSourceMock.CLOSED = 2;
   EventSourceMock.CONNECTING = 0;
-  
+
   return {
     EventSource: EventSourceMock,
   };
@@ -49,13 +49,19 @@ describe('SSEClient', () => {
     it('should set up message event listener', () => {
       client.connect('http://127.0.0.1:3000');
 
-      expect(mockEventSourceInstance.addEventListener).toHaveBeenCalledWith('message', expect.any(Function));
+      expect(mockEventSourceInstance.addEventListener).toHaveBeenCalledWith(
+        'message',
+        expect.any(Function),
+      );
     });
 
     it('should set up error event listener', () => {
       client.connect('http://127.0.0.1:3000');
 
-      expect(mockEventSourceInstance.addEventListener).toHaveBeenCalledWith('error', expect.any(Function));
+      expect(mockEventSourceInstance.addEventListener).toHaveBeenCalledWith(
+        'error',
+        expect.any(Function),
+      );
     });
   });
 
@@ -66,7 +72,7 @@ describe('SSEClient', () => {
       client.onPartUpdated(callback);
 
       const messageHandler = mockEventSourceInstance.addEventListener.mock.calls.find(
-        (call: any) => call[0] === 'message'
+        (call: any) => call[0] === 'message',
       )?.[1];
 
       const event = {
@@ -100,7 +106,7 @@ describe('SSEClient', () => {
       client.onPartUpdated(callback);
 
       const messageHandler = mockEventSourceInstance.addEventListener.mock.calls.find(
-        (call: any) => call[0] === 'message'
+        (call: any) => call[0] === 'message',
       )?.[1];
 
       const event = {
@@ -128,7 +134,7 @@ describe('SSEClient', () => {
       client.onPartUpdated(callback);
 
       const messageHandler = mockEventSourceInstance.addEventListener.mock.calls.find(
-        (call: any) => call[0] === 'message'
+        (call: any) => call[0] === 'message',
       )?.[1];
 
       const event = {
@@ -151,7 +157,7 @@ describe('SSEClient', () => {
       client.onSessionIdle(callback);
 
       const messageHandler = mockEventSourceInstance.addEventListener.mock.calls.find(
-        (call: any) => call[0] === 'message'
+        (call: any) => call[0] === 'message',
       )?.[1];
 
       const event = {
@@ -174,7 +180,7 @@ describe('SSEClient', () => {
       client.onSessionIdle(callback);
 
       const messageHandler = mockEventSourceInstance.addEventListener.mock.calls.find(
-        (call: any) => call[0] === 'message'
+        (call: any) => call[0] === 'message',
       )?.[1];
 
       const event = {
@@ -197,7 +203,7 @@ describe('SSEClient', () => {
       client.onError(callback);
 
       const errorHandler = mockEventSourceInstance.addEventListener.mock.calls.find(
-        (call: any) => call[0] === 'error'
+        (call: any) => call[0] === 'error',
       )?.[1];
 
       const error = new Error('Connection failed');

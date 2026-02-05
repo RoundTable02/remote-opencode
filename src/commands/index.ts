@@ -28,4 +28,3 @@ commands.set(model.data.name, model);
 commands.set(setports.data.name, setports as Command);
 commands.set(queue.data.name, queue);
 commands.set(diff.data.name, diff as Command);
-

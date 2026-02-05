@@ -49,7 +49,7 @@ describe('SessionManager', () => {
       });
 
       await expect(createSession(3000)).rejects.toThrow(
-        'Failed to create session: 500 Internal Server Error'
+        'Failed to create session: 500 Internal Server Error',
       );
     });
 
@@ -59,9 +59,7 @@ describe('SessionManager', () => {
         json: async () => ({ slug: 'test-session' }),
       });
 
-      await expect(createSession(3000)).rejects.toThrow(
-        'Invalid session response: missing id'
-      );
+      await expect(createSession(3000)).rejects.toThrow('Invalid session response: missing id');
     });
   });
 
@@ -82,7 +80,7 @@ describe('SessionManager', () => {
           body: JSON.stringify({
             parts: [{ type: 'text', text: 'Hello OpenCode' }],
           }),
-        }
+        },
       );
     });
 
@@ -103,7 +101,7 @@ describe('SessionManager', () => {
             parts: [{ type: 'text', text: 'Hello OpenCode' }],
             model: { providerID: 'llm-proxy', modelID: 'ant_gemini-3-flash' },
           }),
-        }
+        },
       );
     });
 
@@ -115,7 +113,7 @@ describe('SessionManager', () => {
       });
 
       await expect(sendPrompt(3000, 'ses_invalid', 'test')).rejects.toThrow(
-        'Failed to send prompt: 404 Not Found'
+        'Failed to send prompt: 404 Not Found',
       );
     });
   });

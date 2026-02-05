@@ -51,21 +51,21 @@ interface OpenCodeEvent {
 }
 
 export function parseOpenCodeOutput(buffer: string): string {
-  const lines = buffer.split('\n').filter(line => line.trim());
+  const lines = buffer.split('\n').filter((line) => line.trim());
   const textParts: string[] = [];
   let lastFinish: OpenCodeEvent | null = null;
 
   for (const line of lines) {
     try {
       const event = JSON.parse(line) as OpenCodeEvent;
-      
+
       switch (event.type) {
         case 'text':
           if (event.part?.text) {
             textParts.push(event.part.text);
           }
           break;
-        
+
         case 'step_finish':
           lastFinish = event;
           break;
@@ -94,7 +94,7 @@ export function parseOpenCodeOutput(buffer: string): string {
 
 export function formatOutput(buffer: string, maxLength: number = 1900): string {
   const parsed = parseOpenCodeOutput(buffer);
-  
+
   if (!parsed.trim()) {
     return '⏳ Processing...';
   }
@@ -102,6 +102,6 @@ export function formatOutput(buffer: string, maxLength: number = 1900): string {
   if (parsed.length <= maxLength) {
     return parsed;
   }
-  
+
   return '...(truncated)...\n\n' + parsed.slice(-maxLength);
 }

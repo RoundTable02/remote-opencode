@@ -13,22 +13,17 @@ env:
 
 jobs:
   # ============================================================
-  # Single Unified Workflow Job
+  # Stage 1: Validation & Code Quality
   # ============================================================
-  ci-cd:
-    name: 🚀 CI/CD & Standalone Release
-    runs-on: windows-latest # Windows is required for SEA .exe generation
-    timeout-minutes: 20
+  quality:
+    name: 🔬 Quality & Lint
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
     permissions:
-      contents: write
-      pull-requests: write
-      issues: write
-
+      contents: read
     steps:
       - name: 🔍 Checkout code
         uses: actions/checkout@v4
-        with:
-          fetch-depth: 0 # Full history needed for changelog generation
 
       - name: 🟢 Setup Node.js
         uses: actions/setup-node@v4
@@ -39,55 +34,128 @@ jobs:
       - name: 📦 Install dependencies
         run: npm ci
 
-      - name: 🔬 Code Quality Check (Lint & Types)
-        run: |
-          npm run lint
-          npm run type-check
-          npm run format:check
+      - name: ✨ Prettier Format Check
+        run: npm run format:check
 
-      - name: 🧪 Unit Tests
+      - name: 🧹 Lint Check
+        run: npm run lint
+
+      - name: 🛡️ TypeScript Type Check
+        run: npm run type-check
+
+  # ============================================================
+  # Stage 2: Unit Testing
+  # ============================================================
+  test:
+    name: 🧪 Unit Tests
+    needs: quality
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: 🔍 Checkout code
+        uses: actions/checkout@v4
+
+      - name: 🟢 Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: 📦 Install dependencies
+        run: npm ci
+
+      - name: 🏃 Run Tests
         run: npm test
 
-      - name: 🏗️ Build Standalone EXE
+  # ============================================================
+  # Stage 3: Build Standalone EXE
+  # ============================================================
+  build:
+    name: 🏗️ Build Standalone EXE
+    needs: test
+    runs-on: windows-latest
+    timeout-minutes: 15
+    steps:
+      - name: 🔍 Checkout code
+        uses: actions/checkout@v4
+
+      - name: 🟢 Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: 📦 Install dependencies
+        run: npm ci
+
+      - name: 🔨 Build Standalone EXE
         run: npm run build:sea
 
-      - name: ⬆️ Upload Artifact (Internal)
+      - name: ⬆️ Upload Artifact
         uses: actions/upload-artifact@v4
         with:
           name: remote-opencode-windows
           path: dist/remote-opencode.exe
-          retention-days: 1
+          retention-days: 7
 
-      # ============================================================
-      # Release Logic (Only on Version Tags)
-      # ============================================================
+  # ============================================================
+  # Stage 4: Release & Feedback
+  # ============================================================
+  release-and-feedback:
+    name: 🚀 Release & PR Summary
+    needs: build
+    runs-on: ubuntu-latest
+    if: always()
+    permissions:
+      contents: write
+      pull-requests: write
+      issues: write
+
+    steps:
+      - name: 🔍 Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: 📥 Download Artifact
+        if: needs.build.result == 'success'
+        uses: actions/download-artifact@v4
+        with:
+          name: remote-opencode-windows
+          path: .
+
       - name: 🚀 Create GitHub Release
-        if: startsWith(github.ref, 'refs/tags/v')
+        if: startsWith(github.ref, 'refs/tags/v') && needs.build.result == 'success'
         uses: softprops/action-gh-release@v2
         with:
-          files: dist/remote-opencode.exe
+          files: remote-opencode.exe
           name: Release ${{ github.ref_name }}
           draft: false
           prerelease: false
-          generate_release_notes: true # Automatically generates changelog from commits
+          generate_release_notes: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      # ============================================================
-      # PR Feedback (Only on Pull Requests)
-      # ============================================================
       - name: 📊 Post PR Summary
-        if: github.event_name == 'pull_request' && always()
+        if: github.event_name == 'pull_request'
         uses: actions/github-script@v7
         with:
           script: |
-            const status = "${{ job.status }}";
-            const emoji = status === 'success' ? '✅' : '❌';
-            const body = `## ${emoji} CI/CD Pipeline ${status === 'success' ? 'Passed' : 'Failed'}
+            const qualityStatus = "${{ needs.quality.result }}";
+            const testStatus = "${{ needs.test.result }}";
+            const buildStatus = "${{ needs.build.result }}";
 
-            All checks (Lint, Types, Format, Tests, and Windows Build) have been executed in a unified environment.
+            const check = (status) => status === 'success' ? '✅ Passed' : (status === 'skipped' ? '⏭️ Skipped' : '❌ Failed');
 
-            ${status === 'success' ? 'The standalone EXE was built successfully and is ready for release! 🎉' : 'Please check the logs to resolve issues before merging.'}`;
+            const body = `## CI/CD Pipeline Summary
+
+            | Stage | Status |
+            |-------|--------|
+            | 🔬 Code Quality | ${check(qualityStatus)} |
+            | 🧪 Unit Tests | ${check(testStatus)} |
+            | 🏗️ Build EXE | ${check(buildStatus)} |
+
+            ${buildStatus === 'success' ? 'Ready for merge and release! 🎉' : 'Please resolve the issues above.'}`;
 
             github.rest.issues.createComment({
               issue_number: context.issue.number,

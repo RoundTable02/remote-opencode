@@ -1,7 +1,7 @@
 ---
 name: Question
 about: Ask a question about usage or behavior
-title: "[Question] "
+title: '[Question] '
 labels: question
 assignees: ''
 ---
@@ -24,6 +24,6 @@ Describe what you've already tried or looked at:
 
 ## Environment (if relevant)
 
-- **OS**: 
-- **Node.js version**: 
-- **remote-opencode version**: 
+- **OS**:
+- **Node.js version**:
+- **remote-opencode version**:

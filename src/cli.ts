@@ -21,11 +21,14 @@ try {
   pkg = {
     name: 'remote-opencode',
     version: '1.2.0',
-    description: 'Discord bot for remote OpenCode CLI access'
+    description: 'Discord bot for remote OpenCode CLI access',
   };
-  
+
   // Try to get real version if possible, but be extremely careful with import.meta.url
-  const metaUrl = typeof import.meta !== 'undefined' && import.meta.url ? import.meta.url : ('file://' + process.execPath);
+  const metaUrl =
+    typeof import.meta !== 'undefined' && import.meta.url
+      ? import.meta.url
+      : 'file://' + process.execPath;
   const require = createRequire(metaUrl);
   const realPkg = require('../package.json');
   if (realPkg) pkg = realPkg;
@@ -57,13 +60,13 @@ program
       console.log(`Run ${pc.cyan('remote-opencode setup')} first to configure your Discord bot.\n`);
       process.exit(1);
     }
-    
+
     try {
       await deployCommands();
     } catch {
       console.log(pc.dim('Command deployment skipped (will retry on next start)'));
     }
-    
+
     await startBot();
   });
 
@@ -83,7 +86,7 @@ program
       console.log(`Run ${pc.cyan('remote-opencode setup')} first.\n`);
       process.exit(1);
     }
-    
+
     await deployCommands();
   });
 
@@ -97,22 +100,21 @@ program
     console.log();
   });
 
-program
-  .action(async () => {
-    if (!hasBotConfig()) {
-      console.log(pc.bold('\nWelcome to remote-opencode!\n'));
-      console.log('It looks like this is your first time running the bot.');
-      console.log(`Run ${pc.cyan('remote-opencode setup')} to configure your Discord bot.\n`);
-      console.log('Available commands:');
-      console.log(`  ${pc.cyan('remote-opencode setup')}   - Interactive setup wizard`);
-      console.log(`  ${pc.cyan('remote-opencode start')}   - Start the bot`);
-      console.log(`  ${pc.cyan('remote-opencode deploy')}  - Deploy slash commands`);
-      console.log(`  ${pc.cyan('remote-opencode config')}  - Show configuration`);
-      console.log();
-      process.exit(0);
-    }
-    
-    await startBot();
-  });
+program.action(async () => {
+  if (!hasBotConfig()) {
+    console.log(pc.bold('\nWelcome to remote-opencode!\n'));
+    console.log('It looks like this is your first time running the bot.');
+    console.log(`Run ${pc.cyan('remote-opencode setup')} to configure your Discord bot.\n`);
+    console.log('Available commands:');
+    console.log(`  ${pc.cyan('remote-opencode setup')}   - Interactive setup wizard`);
+    console.log(`  ${pc.cyan('remote-opencode start')}   - Start the bot`);
+    console.log(`  ${pc.cyan('remote-opencode deploy')}  - Deploy slash commands`);
+    console.log(`  ${pc.cyan('remote-opencode config')}  - Show configuration`);
+    console.log();
+    process.exit(0);
+  }
+
+  await startBot();
+});
 
 program.parse();

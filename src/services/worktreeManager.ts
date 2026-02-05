@@ -15,17 +15,21 @@ export function sanitizeBranchName(name: string): string {
 
 export async function branchExists(
   projectPath: string,
-  branchName: string
+  branchName: string,
 ): Promise<{ local: boolean; remote: boolean }> {
   try {
     const [localRes, remoteRes] = await Promise.all([
-      execAsync(`git branch --list ${branchName}`, { cwd: projectPath }).catch(() => ({ stdout: '' })),
-      execAsync(`git branch -r --list origin/${branchName}`, { cwd: projectPath }).catch(() => ({ stdout: '' }))
+      execAsync(`git branch --list ${branchName}`, { cwd: projectPath }).catch(() => ({
+        stdout: '',
+      })),
+      execAsync(`git branch -r --list origin/${branchName}`, { cwd: projectPath }).catch(() => ({
+        stdout: '',
+      })),
     ]);
 
     return {
       local: localRes.stdout.trim().length > 0,
-      remote: remoteRes.stdout.trim().length > 0
+      remote: remoteRes.stdout.trim().length > 0,
     };
   } catch (error) {
     console.error('Error checking branch existence:', error);
@@ -43,11 +47,11 @@ export async function createWorktree(projectPath: string, branchName: string): P
   try {
     if (local || remote) {
       await execAsync(`git worktree add ./worktrees/${sanitizedBranch} ${sanitizedBranch}`, {
-        cwd: projectPath
+        cwd: projectPath,
       });
     } else {
       await execAsync(`git worktree add ./worktrees/${sanitizedBranch} -b ${sanitizedBranch}`, {
-        cwd: projectPath
+        cwd: projectPath,
       });
     }
 

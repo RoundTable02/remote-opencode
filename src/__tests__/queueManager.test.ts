@@ -12,7 +12,7 @@ describe('queueManager', () => {
   const threadId = 'thread-1';
   const parentId = 'channel-1';
   const mockChannel = {
-    send: vi.fn().mockResolvedValue({})
+    send: vi.fn().mockResolvedValue({}),
   };
 
   beforeEach(() => {
@@ -22,14 +22,14 @@ describe('queueManager', () => {
   describe('isBusy', () => {
     it('should return true if sseClient is connected', () => {
       vi.mocked(sessionManager.getSseClient).mockReturnValue({
-        isConnected: () => true
+        isConnected: () => true,
       } as any);
       expect(isBusy(threadId)).toBe(true);
     });
 
     it('should return false if sseClient is not connected', () => {
       vi.mocked(sessionManager.getSseClient).mockReturnValue({
-        isConnected: () => false
+        isConnected: () => false,
       } as any);
       expect(isBusy(threadId)).toBe(false);
     });
@@ -45,11 +45,11 @@ describe('queueManager', () => {
       vi.mocked(dataStore.getQueueSettings).mockReturnValue({
         paused: true,
         continueOnFailure: false,
-        freshContext: true
+        freshContext: true,
       });
-      
+
       await processNextInQueue(mockChannel as any, threadId, parentId);
-      
+
       expect(dataStore.popFromQueue).not.toHaveBeenCalled();
     });
 
@@ -57,22 +57,22 @@ describe('queueManager', () => {
       vi.mocked(dataStore.getQueueSettings).mockReturnValue({
         paused: false,
         continueOnFailure: false,
-        freshContext: true
+        freshContext: true,
       });
       vi.mocked(dataStore.popFromQueue).mockReturnValue({
         prompt: 'test prompt',
         userId: 'user-1',
-        timestamp: Date.now()
+        timestamp: Date.now(),
       });
 
       await processNextInQueue(mockChannel as any, threadId, parentId);
 
       expect(dataStore.popFromQueue).toHaveBeenCalledWith(threadId);
       expect(executionService.runPrompt).toHaveBeenCalledWith(
-        mockChannel, 
-        threadId, 
-        'test prompt', 
-        parentId
+        mockChannel,
+        threadId,
+        'test prompt',
+        parentId,
       );
     });
 
@@ -80,7 +80,7 @@ describe('queueManager', () => {
       vi.mocked(dataStore.getQueueSettings).mockReturnValue({
         paused: false,
         continueOnFailure: false,
-        freshContext: true
+        freshContext: true,
       });
       vi.mocked(dataStore.popFromQueue).mockReturnValue(undefined);
 
