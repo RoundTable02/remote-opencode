@@ -2,6 +2,20 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.1.0] - 2026-02-05
+
+### Added
+- **Automated Message Queuing**: Added a new system to queue multiple prompts in a thread. If the bot is busy, new messages are automatically queued and processed sequentially.
+- **Fresh Context Mode**: Each queued job can optionally start with a fresh AI conversation context (new session) while maintaining the same code state.
+- **Queue Management**: New `/queue` slash command suite to list, clear, pause, resume, and configure queue settings.
+- **Queue Settings**:
+  - `continue_on_failure`: Toggle whether the queue stops or continues when a job encounters an error.
+  - `fresh_context`: Toggle between persistent conversation memory and fresh starts per job.
+- **Visual Feedback**: The bot now reacts with `📥` when a message is successfully queued via chat.
+
+### Changed
+- **Refactored Execution Logic**: Moved core prompt execution to a dedicated `executionService` for better reliability and code reuse.
+
 ## [1.0.11] - 2026-02-04
 
 ### Added

@@ -18,7 +18,22 @@ export interface DataStore {
   threadSessions?: ThreadSession[];
   worktreeMappings?: WorktreeMapping[];
   passthroughThreads?: PassthroughThread[];
+  queues?: Record<string, QueuedMessage[]>;
+  queueSettings?: Record<string, QueueSettings>;
 }
+
+export interface QueuedMessage {
+  prompt: string;
+  userId: string;
+  timestamp: number;
+}
+
+export interface QueueSettings {
+  paused: boolean;
+  continueOnFailure: boolean;
+  freshContext: boolean;
+}
+
 
 export interface TextPart {
   id: string;

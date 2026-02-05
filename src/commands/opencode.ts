@@ -1,22 +1,14 @@
 import { 
   SlashCommandBuilder, 
   ChatInputCommandInteraction, 
-  ActionRowBuilder, 
-  ButtonBuilder, 
-  ButtonStyle,
   MessageFlags,
-  Message,
-  ThreadChannel,
-  EmbedBuilder
+  ThreadChannel
 } from 'discord.js';
 import * as dataStore from '../services/dataStore.js';
-import * as sessionManager from '../services/sessionManager.js';
-import * as serveManager from '../services/serveManager.js';
-import * as worktreeManager from '../services/worktreeManager.js';
-import { SSEClient } from '../services/sseClient.js';
 import { getOrCreateThread } from '../utils/threadHelper.js';
-import { formatOutput } from '../utils/messageFormatter.js';
 import type { Command } from './index.js';
+import { runPrompt } from '../services/executionService.js';
+import { isBusy } from '../services/queueManager.js';
 
 function getParentChannelId(interaction: ChatInputCommandInteraction): string {
   const channel = interaction.channel;
@@ -66,223 +58,24 @@ export const opencode: Command = {
     
     const threadId = thread.id;
     
-    // Auto-create worktree if enabled and this is a new thread (not isInThread)
-    let worktreeMapping = dataStore.getWorktreeMapping(threadId);
-    
-    if (!worktreeMapping && !isInThread) {
-      const projectAlias = dataStore.getChannelBinding(channelId);
-      if (projectAlias && dataStore.getProjectAutoWorktree(projectAlias)) {
-        try {
-          const branchName = worktreeManager.sanitizeBranchName(
-            `auto/${threadId.slice(0, 8)}-${Date.now()}`
-          );
-          const worktreePath = await worktreeManager.createWorktree(projectPath, branchName);
-          
-          const newMapping = {
-            threadId,
-            branchName,
-            worktreePath,
-            projectPath,
-            description: prompt.slice(0, 50) + (prompt.length > 50 ? '...' : ''),
-            createdAt: Date.now()
-          };
-          dataStore.setWorktreeMapping(newMapping);
-          worktreeMapping = newMapping;
-          
-          const embed = new EmbedBuilder()
-            .setTitle(`🌳 Auto-Worktree: ${branchName}`)
-            .setDescription('Automatically created for this session')
-            .addFields(
-              { name: 'Branch', value: branchName, inline: true },
-              { name: 'Path', value: worktreePath, inline: true }
-            )
-            .setColor(0x2ecc71);
-          
-          const worktreeButtons = new ActionRowBuilder<ButtonBuilder>()
-            .addComponents(
-              new ButtonBuilder()
-                .setCustomId(`delete_${threadId}`)
-                .setLabel('Delete')
-                .setStyle(ButtonStyle.Danger),
-              new ButtonBuilder()
-                .setCustomId(`pr_${threadId}`)
-                .setLabel('Create PR')
-                .setStyle(ButtonStyle.Primary)
-            );
-          
-          await thread.send({ embeds: [embed], components: [worktreeButtons] });
-        } catch (error) {
-          console.error('Auto-worktree creation failed:', error);
-          // Continue with main project path (graceful degradation)
-        }
-      }
-    }
-    
-    const effectivePath = worktreeMapping?.worktreePath ?? projectPath;
-    const preferredModel = dataStore.getChannelModel(channelId);
-    const modelDisplay = preferredModel ? `\`${preferredModel}\`` : 'default';
-    
-    const existingClient = sessionManager.getSseClient(threadId);
-    if (existingClient && existingClient.isConnected()) {
+    if (isBusy(threadId)) {
+      dataStore.addToQueue(threadId, {
+        prompt,
+        userId: interaction.user.id,
+        timestamp: Date.now()
+      });
       await interaction.reply({
-        content: '⚠️ Already running. Wait for completion or press [Interrupt].',
+        content: '📥 Prompt added to queue.',
         flags: MessageFlags.Ephemeral
       });
       return;
     }
-    
+
     await interaction.reply({
       content: `📌 **Prompt**: ${prompt}`
     });
-    
-    const buttons = new ActionRowBuilder<ButtonBuilder>()
-      .addComponents(
-        new ButtonBuilder()
-          .setCustomId(`interrupt_${threadId}`)
-          .setLabel('⏸️ Interrupt')
-          .setStyle(ButtonStyle.Secondary)
-      );
-    
-    let streamMessage: Message;
-    try {
-      streamMessage = await thread.send({
-        content: `🚀 Starting OpenCode server... (Model: ${modelDisplay})`,
-        components: [buttons]
-      });
-    } catch {
-      await interaction.editReply({
-        content: `📌 **Prompt**: ${prompt}
 
-❌ Cannot send message to thread.`
-      });
-      return;
-    }
-    
-    let port: number;
-    let sessionId: string;
-    let updateInterval: NodeJS.Timeout | null = null;
-    let accumulatedText = '';
-    let lastContent = '';
-    let tick = 0;
-    const spinner = ['⠋', '⠙', '⠹', '⠸', '⠼', '⠴', '⠦', '⠧', '⠇', '⠏'];
-    
-    const updateStreamMessage = async (content: string, components: ActionRowBuilder<ButtonBuilder>[]) => {
-      if (!streamMessage) return;
-      try {
-        await streamMessage.edit({ content, components });
-      } catch {
-      }
-    };
-    
-    try {
-      port = await serveManager.spawnServe(effectivePath, preferredModel);
-      
-      await updateStreamMessage(`⏳ Waiting for OpenCode server... (Model: ${modelDisplay})`, [buttons]);
-      await serveManager.waitForReady(port, 30000, effectivePath, preferredModel);
-      
-      const existingSession = sessionManager.getSessionForThread(threadId);
-      if (existingSession && existingSession.projectPath === effectivePath) {
-        const isValid = await sessionManager.validateSession(port, existingSession.sessionId);
-        if (isValid) {
-          sessionId = existingSession.sessionId;
-          sessionManager.updateSessionLastUsed(threadId);
-        } else {
-          sessionId = await sessionManager.createSession(port);
-          sessionManager.setSessionForThread(threadId, sessionId, effectivePath, port);
-        }
-      } else {
-        sessionId = await sessionManager.createSession(port);
-        sessionManager.setSessionForThread(threadId, sessionId, effectivePath, port);
-      }
-      
-      const sseClient = new SSEClient();
-      sseClient.connect(`http://127.0.0.1:${port}`);
-      sessionManager.setSseClient(threadId, sseClient);
-      
-      sseClient.onPartUpdated((part) => {
-        accumulatedText = part.text;
-      });
-      
-      sseClient.onSessionIdle(() => {
-        if (updateInterval) {
-          clearInterval(updateInterval);
-          updateInterval = null;
-        }
-        
-        (async () => {
-          try {
-            const formatted = formatOutput(accumulatedText);
-            const disabledButtons = new ActionRowBuilder<ButtonBuilder>()
-              .addComponents(
-                new ButtonBuilder()
-                  .setCustomId(`interrupt_${threadId}`)
-                  .setLabel('⏸️ Interrupt')
-                  .setStyle(ButtonStyle.Secondary)
-                  .setDisabled(true)
-              );
-            
-            await updateStreamMessage(
-              `\`\`\`\n${formatted}\n\`\`\``,
-              [disabledButtons]
-            );
-            
-            await thread.send({ content: '✅ Done' });
-            
-            sseClient.disconnect();
-            sessionManager.clearSseClient(threadId);
-          } catch {
-          }
-        })();
-      });
-      
-      sseClient.onError((error) => {
-        if (updateInterval) {
-          clearInterval(updateInterval);
-          updateInterval = null;
-        }
-        
-        (async () => {
-          try {
-            await updateStreamMessage(`❌ Connection error: ${error.message}`, []);
-          } catch {
-          }
-        })();
-      });
-      
-      updateInterval = setInterval(async () => {
-        tick++;
-        try {
-          const formatted = formatOutput(accumulatedText);
-          const spinnerChar = spinner[tick % spinner.length];
-          const newContent = formatted || 'Processing...';
-          
-          if (newContent !== lastContent || tick % 2 === 0) {
-            lastContent = newContent;
-            await updateStreamMessage(
-              `${spinnerChar} **Running...**\n\`\`\`\n${newContent}\n\`\`\``,
-              [buttons]
-            );
-          }
-        } catch {
-        }
-      }, 1000);
-      
-      await updateStreamMessage('📝 Sending prompt...', [buttons]);
-      await sessionManager.sendPrompt(port, sessionId, prompt, preferredModel);
-      
-    } catch (error) {
-      if (updateInterval) {
-        clearInterval(updateInterval);
-      }
-      
-      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-      await updateStreamMessage(`❌ OpenCode execution failed: ${errorMessage}`, []);
-      
-      const client = sessionManager.getSseClient(threadId);
-      if (client) {
-        client.disconnect();
-        sessionManager.clearSseClient(threadId);
-      }
-    }
+    await runPrompt(thread as any, threadId, prompt, channelId);
   }
 };
+

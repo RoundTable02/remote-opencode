@@ -12,8 +12,10 @@
 - 💻 **Access from any device** — Use your powerful dev machine from a laptop or tablet
 - 🌍 **Work remotely** — Control your home/office workstation from anywhere
 - 👥 **Collaborate** — Share AI coding sessions with team members in Discord
+- 🤖 **Automated Workflows** — Queue up multiple tasks and let the bot process them sequentially
 
 ## How It Works
+
 
 ```
 ┌─────────────────┐    Discord API    ┌─────────────────┐
@@ -258,20 +260,6 @@ Enable automatic worktree creation for a project. When enabled, new `/opencode` 
 2. The setting toggles on/off for that project
 3. When enabled, new sessions automatically create worktrees with branch names like `auto/abc12345-1738600000000`
 
-**Example:**
-```
-You: /autowork
-Bot: ✅ Auto-worktree enabled for project myapp.
-     New sessions will automatically create isolated worktrees.
-
-You: /opencode prompt:Add user authentication
-Bot: [Creates thread + auto-worktree]
-     🌳 Auto-Worktree: auto/abc12345-1738600000000
-     [Delete] [Create PR]
-     📌 Prompt: Add user authentication
-     [streaming response...]
-```
-
 **Features:**
 - 🌳 **Automatic isolation** — each session gets its own branch and worktree
 - 📱 **Mobile-friendly** — no need to type `/work` with branch names
@@ -279,7 +267,29 @@ Bot: [Creates thread + auto-worktree]
 - 🚀 **Create PR button** — easily create pull requests from worktree
 - ⚡ **Per-project setting** — enable/disable independently for each project
 
+### `/queue` — Manage Message Queue
+
+Control the automated job queue for the current thread.
+
+```
+/queue list
+/queue clear
+/queue pause
+/queue resume
+/queue settings continue_on_failure:True fresh_context:True
+```
+
+**How it works:**
+1. Send multiple messages to a thread (or use `/opencode` multiple times)
+2. If the bot is busy, it reacts with `📥` and adds the task to the queue
+3. Once the current job is done, the bot automatically picks up the next one
+
+**Settings:**
+- `continue_on_failure`: If `True`, the bot moves to the next task even if the current one fails.
+- `fresh_context`: If `True` (default), the AI forgets previous chat history for each new queued task to improve performance, while maintaining the same code state.
+
 ---
+
 
 ## Usage Workflow
 
@@ -326,27 +336,26 @@ Share AI coding sessions with your team:
 3. Team members can watch sessions in real-time
 4. Discuss in threads while AI works
 
-### Worktree Workflow (Parallel Features)
+### Automated Iteration Workflow
 
-Work on multiple features without conflicts:
+Perfect for "setting and forgetting" several tasks:
 
-1. **Start a new feature:**
+1. **Send multiple instructions:**
    ```
-   /work branch:feature/auth description:Implement OAuth2 login
+   You: Refactor the API
+   Bot: [Starts working]
+   You: Add documentation to the new methods
+   Bot: 📥 [Queued]
+   You: Run tests and fix any issues
+   Bot: 📥 [Queued]
    ```
 
-2. **Work in the created thread:**
-   ```
-   /opencode prompt:Add Google OAuth provider
-   ```
+2. **The bot will finish the API refactor, then automatically start the documentation task, then run the tests.**
 
-3. **When done, create a PR:**
-   Click the **Create PR** button
-
-4. **Clean up:**
-   Click **Delete** to remove the worktree
+3. **Monitor progress:** Use `/queue list` to see pending tasks.
 
 ---
+
 
 ## Configuration
 
@@ -495,7 +504,10 @@ src/
 ├── services/              # Core business logic
 │   ├── serveManager.ts    # OpenCode process management
 │   ├── sessionManager.ts  # Session state management
+│   ├── queueManager.ts    # Automated job queuing
+│   ├── executionService.ts # Core prompt execution logic
 │   ├── sseClient.ts       # Real-time event streaming
+
 │   ├── dataStore.ts       # Persistent storage
 │   ├── configStore.ts     # Bot configuration
 │   └── worktreeManager.ts # Git worktree operations
@@ -512,6 +524,12 @@ src/
 ## Changelog
 
 See [CHANGELOG.md](CHANGELOG.md) for a full history of changes.
+
+### [1.1.0] - 2026-02-05
+
+#### Added
+- **Automated Message Queuing**: Added a new system to queue multiple prompts in a thread. If the bot is busy, new messages are automatically queued and processed sequentially.
+- **Queue Management**: New `/queue` slash command suite to list, clear, pause, resume, and configure queue settings.
 
 ### [1.0.10] - 2026-02-04
 
