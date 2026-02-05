@@ -93,6 +93,13 @@ jobs:
       - name: 📦 Install dependencies
         run: npm ci
 
+      - name: 🏷️ Get Version from package.json
+        id: get_version
+        shell: bash
+        run: |
+          VERSION=$(node -p "require('./package.json').version")
+          echo "VERSION=$VERSION" >> $GITHUB_OUTPUT
+
       - name: 🔨 Build Standalone EXE
         run: npm run build:sea
 
@@ -111,13 +118,14 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           files: dist/remote-opencode.exe
-          # If it's a tag, use tag name. Otherwise, use 'Latest Build'
-          name: ${{ startsWith(github.ref, 'refs/tags/v') && github.ref_name || 'Latest Build (Main)' }}
+          # Dynamic name using the version from package.json
+          name: ${{ startsWith(github.ref, 'refs/tags/v') && github.ref_name || format('Release v{0}', steps.get_version.outputs.VERSION) }}
+          # Use the tag from git if available, otherwise fallback to 'latest'
           tag_name: ${{ startsWith(github.ref, 'refs/tags/v') && github.ref_name || 'latest' }}
           draft: false
-          prerelease: ${{ !startsWith(github.ref, 'refs/tags/v') }} # Mark rolling builds as pre-release
-          generate_release_notes: true
-          make_latest: ${{ startsWith(github.ref, 'refs/tags/v') && 'true' || 'false' }}
+          prerelease: false # Force it to show as a "Main Release"
+          generate_release_notes: true # This will populate the body with the commit log
+          make_latest: true # Ensures this is the one users see first
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
@@ -135,7 +143,7 @@ jobs:
             - 🧪 Unit Tests: Passed
             - 🏗️ Build EXE: Standalone Windows binary generated successfully.
 
-            This PR is ready to be merged. Once merged to main, a new **Latest Build** release will be automatically created! 🎉`;
+            This PR is ready to be merged. Once merged to main, a new **Main Release** will be automatically created! 🎉`;
 
             github.rest.issues.createComment({
               issue_number: context.issue.number,
