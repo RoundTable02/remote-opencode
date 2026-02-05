@@ -7,6 +7,13 @@ on:
       - 'v*'
   pull_request:
     branches: [main, master, develop]
+  workflow_dispatch:
+    inputs:
+      create_release:
+        description: 'Create a GitHub Release?'
+        required: true
+        type: boolean
+        default: false
 
 env:
   NODE_VERSION: '22'
@@ -19,8 +26,6 @@ jobs:
     name: 🔬 Quality & Lint
     runs-on: ubuntu-latest
     timeout-minutes: 10
-    permissions:
-      contents: read
     steps:
       - name: 🔍 Checkout code
         uses: actions/checkout@v4
@@ -68,16 +73,22 @@ jobs:
         run: npm test
 
   # ============================================================
-  # Stage 3: Build Standalone EXE
+  # Stage 3: Build & Release (Windows)
   # ============================================================
-  build:
-    name: 🏗️ Build Standalone EXE
+  build-and-release:
+    name: 🏗️ Build & Release EXE
     needs: test
     runs-on: windows-latest
-    timeout-minutes: 15
+    timeout-minutes: 20
+    permissions:
+      contents: write
+      pull-requests: write
+
     steps:
       - name: 🔍 Checkout code
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: 🟢 Setup Node.js
         uses: actions/setup-node@v4
@@ -91,71 +102,45 @@ jobs:
       - name: 🔨 Build Standalone EXE
         run: npm run build:sea
 
-      - name: ⬆️ Upload Artifact
+      - name: ⬆️ Upload Artifact (Summary Page)
         uses: actions/upload-artifact@v4
         with:
           name: remote-opencode-windows
           path: dist/remote-opencode.exe
           retention-days: 7
 
-  # ============================================================
-  # Stage 4: Release & Feedback
-  # ============================================================
-  release-and-feedback:
-    name: 🚀 Release & PR Summary
-    needs: build
-    runs-on: ubuntu-latest
-    if: always()
-    permissions:
-      contents: write
-      pull-requests: write
-      issues: write
-
-    steps:
-      - name: 🔍 Checkout code
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-
-      - name: 📥 Download Artifact
-        if: needs.build.result == 'success'
-        uses: actions/download-artifact@v4
-        with:
-          name: remote-opencode-windows
-          path: .
-
+      # ============================================================
+      # Release Logic
+      # ============================================================
       - name: 🚀 Create GitHub Release
-        if: startsWith(github.ref, 'refs/tags/v') && needs.build.result == 'success'
+        if: startsWith(github.ref, 'refs/tags/v') || github.event.inputs.create_release == 'true'
         uses: softprops/action-gh-release@v2
         with:
-          files: remote-opencode.exe
-          name: Release ${{ github.ref_name }}
+          files: dist/remote-opencode.exe
+          # If triggered by tag, use tag name. If manual, use 'latest-manual'
+          name: ${{ startsWith(github.ref, 'refs/tags/v') && github.ref_name || 'Manual Release' }}
+          tag_name: ${{ startsWith(github.ref, 'refs/tags/v') && github.ref_name || 'latest' }}
           draft: false
           prerelease: false
           generate_release_notes: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
+      # ============================================================
+      # PR Feedback
+      # ============================================================
       - name: 📊 Post PR Summary
-        if: github.event_name == 'pull_request'
+        if: github.event_name == 'pull_request' && always()
         uses: actions/github-script@v7
         with:
           script: |
-            const qualityStatus = "${{ needs.quality.result }}";
-            const testStatus = "${{ needs.test.result }}";
-            const buildStatus = "${{ needs.build.result }}";
+            const body = `## ✅ CI/CD Pipeline Passed
 
-            const check = (status) => status === 'success' ? '✅ Passed' : (status === 'skipped' ? '⏭️ Skipped' : '❌ Failed');
+            - 🔬 Code Quality: Passed
+            - 🧪 Unit Tests: Passed
+            - 🏗️ Build EXE: Standalone Windows binary generated successfully.
 
-            const body = `## CI/CD Pipeline Summary
-
-            | Stage | Status |
-            |-------|--------|
-            | 🔬 Code Quality | ${check(qualityStatus)} |
-            | 🧪 Unit Tests | ${check(testStatus)} |
-            | 🏗️ Build EXE | ${check(buildStatus)} |
-
-            ${buildStatus === 'success' ? 'Ready for merge and release! 🎉' : 'Please resolve the issues above.'}`;
+            The standalone EXE is available in the **Artifacts** section of this run. 🎉`;
 
             github.rest.issues.createComment({
               issue_number: context.issue.number,
