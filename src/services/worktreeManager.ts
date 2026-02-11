@@ -79,6 +79,15 @@ export async function removeWorktree(worktreePath: string, deleteBranch?: boolea
   }
 }
 
+export async function getCurrentBranch(cwd: string): Promise<string | null> {
+  try {
+    const { stdout } = await execAsync('git rev-parse --abbrev-ref HEAD', { cwd });
+    return stdout.trim() || null;
+  } catch {
+    return null;
+  }
+}
+
 export function worktreeExists(worktreePath: string): boolean {
   return existsSync(worktreePath);
 }

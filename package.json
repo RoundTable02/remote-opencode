@@ -42,6 +42,7 @@
     "eventsource": "^4.1.0",
     "node-pty": "^1.1.0",
     "open": "^10.1.0",
+    "opencode-antigravity-auth": "^1.4.6",
     "picocolors": "^1.1.1",
     "update-notifier": "^7.3.1"
   },

@@ -11,7 +11,7 @@ import * as sessionManager from './sessionManager.js';
 import * as serveManager from './serveManager.js';
 import * as worktreeManager from './worktreeManager.js';
 import { SSEClient } from './sseClient.js';
-import { formatOutput } from '../utils/messageFormatter.js';
+import { formatOutput, buildContextHeader } from '../utils/messageFormatter.js';
 import { processNextInQueue } from './queueManager.js';
 
 export async function runPrompt(
@@ -79,7 +79,10 @@ export async function runPrompt(
   
   const effectivePath = worktreeMapping?.worktreePath ?? projectPath;
   const preferredModel = dataStore.getChannelModel(parentChannelId);
-  const modelDisplay = preferredModel ? `\`${preferredModel}\`` : 'default';
+  const modelDisplay = preferredModel ? `${preferredModel}` : 'default';
+  
+  const branchName = worktreeMapping?.branchName ?? await worktreeManager.getCurrentBranch(effectivePath) ?? 'main';
+  const contextHeader = buildContextHeader(branchName, modelDisplay);
   
   const buttons = new ActionRowBuilder<ButtonBuilder>()
     .addComponents(
@@ -92,7 +95,7 @@ export async function runPrompt(
   let streamMessage: Message;
   try {
     streamMessage = await (channel as any).send({
-      content: `📌 **Prompt**: ${prompt}\n\n🚀 Starting OpenCode server... (Model: ${modelDisplay})`,
+      content: `${contextHeader}\n📌 **Prompt**: ${prompt}\n\n🚀 Starting OpenCode server...`,
       components: [buttons]
     });
   } catch {
@@ -117,7 +120,7 @@ export async function runPrompt(
   try {
     port = await serveManager.spawnServe(effectivePath, preferredModel);
     
-    await updateStreamMessage(`📌 **Prompt**: ${prompt}\n\n⏳ Waiting for OpenCode server... (Model: ${modelDisplay})`, [buttons]);
+    await updateStreamMessage(`${contextHeader}\n📌 **Prompt**: ${prompt}\n\n⏳ Waiting for OpenCode server...`, [buttons]);
     await serveManager.waitForReady(port, 30000, effectivePath, preferredModel);
     
     const settings = dataStore.getQueueSettings(threadId);
@@ -169,7 +172,7 @@ export async function runPrompt(
             );
           
             await updateStreamMessage(
-              `📌 **Prompt**: ${prompt}\n\n\`\`\`\n${formatted}\n\`\`\``,
+              `${contextHeader}\n📌 **Prompt**: ${prompt}\n\n\`\`\`\n${formatted}\n\`\`\``,
               [disabledButtons]
             );
             
@@ -195,7 +198,7 @@ export async function runPrompt(
       
       (async () => {
         try {
-          await updateStreamMessage(`📌 **Prompt**: ${prompt}\n\n❌ Connection error: ${error.message}`, []);
+          await updateStreamMessage(`${contextHeader}\n📌 **Prompt**: ${prompt}\n\n❌ Connection error: ${error.message}`, []);
           
           sseClient.disconnect();
           sessionManager.clearSseClient(threadId);
@@ -222,7 +225,7 @@ export async function runPrompt(
         if (newContent !== lastContent || tick % 2 === 0) {
           lastContent = newContent;
           await updateStreamMessage(
-            `📌 **Prompt**: ${prompt}\n\n${spinnerChar} **Running...**\n\`\`\`\n${newContent}\n\`\`\``,
+            `${contextHeader}\n📌 **Prompt**: ${prompt}\n\n${spinnerChar} **Running...**\n\`\`\`\n${newContent}\n\`\`\``,
             [buttons]
           );
         }
@@ -230,7 +233,7 @@ export async function runPrompt(
       }
     }, 1000);
     
-    await updateStreamMessage(`📌 **Prompt**: ${prompt}\n\n📝 Sending prompt...`, [buttons]);
+    await updateStreamMessage(`${contextHeader}\n📌 **Prompt**: ${prompt}\n\n📝 Sending prompt...`, [buttons]);
     await sessionManager.sendPrompt(port, sessionId, prompt, preferredModel);
     
   } catch (error) {
@@ -239,7 +242,7 @@ export async function runPrompt(
     }
     
     const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-    await updateStreamMessage(`📌 **Prompt**: ${prompt}\n\n❌ OpenCode execution failed: ${errorMessage}`, []);
+    await updateStreamMessage(`${contextHeader}\n📌 **Prompt**: ${prompt}\n\n❌ OpenCode execution failed: ${errorMessage}`, []);
     
     const client = sessionManager.getSseClient(threadId);
     if (client) {

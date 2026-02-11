@@ -92,6 +92,10 @@ export function parseOpenCodeOutput(buffer: string): string {
   return result;
 }
 
+export function buildContextHeader(branchName: string, modelName: string): string {
+  return `🌿 \`${branchName}\` · 🤖 \`${modelName}\``;
+}
+
 export function formatOutput(buffer: string, maxLength: number = 1900): string {
   const parsed = parseOpenCodeOutput(buffer);
   
