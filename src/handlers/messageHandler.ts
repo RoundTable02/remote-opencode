@@ -5,6 +5,7 @@ import {
 import * as dataStore from '../services/dataStore.js';
 import { runPrompt } from '../services/executionService.js';
 import { isBusy } from '../services/queueManager.js';
+import { isAuthorized } from '../services/configStore.js';
 
 export async function handleMessageCreate(message: Message): Promise<void> {
   if (message.author.bot) return;
@@ -16,6 +17,8 @@ export async function handleMessageCreate(message: Message): Promise<void> {
   const threadId = channel.id;
   
   if (!dataStore.isPassthroughEnabled(threadId)) return;
+  
+  if (!isAuthorized(message.author.id)) return;
   
   const parentChannelId = (channel as ThreadChannel).parentId;
   if (!parentChannelId) return;

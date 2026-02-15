@@ -48,6 +48,7 @@ The bot runs on your development machine alongside OpenCode. When you send a com
 - [CLI Commands](#cli-commands)
 - [Discord Slash Commands](#discord-slash-commands)
 - [Usage Workflow](#usage-workflow)
+- [Access Control](#access-control)
 - [Configuration](#configuration)
 - [Troubleshooting](#troubleshooting)
 - [Development](#development)
@@ -131,13 +132,17 @@ If you prefer manual setup or need to troubleshoot:
 
 ## CLI Commands
 
-| Command                  | Description                                          |
-| ------------------------ | ---------------------------------------------------- |
-| `remote-opencode`        | Start the bot (shows setup guide if not configured)  |
-| `remote-opencode setup`  | Interactive setup wizard — configures bot token, IDs |
-| `remote-opencode start`  | Start the Discord bot                                |
-| `remote-opencode deploy` | Deploy/update slash commands to Discord              |
-| `remote-opencode config` | Display current configuration info                   |
+| Command                                    | Description                                          |
+| ------------------------------------------ | ---------------------------------------------------- |
+| `remote-opencode`                          | Start the bot (shows setup guide if not configured)  |
+| `remote-opencode setup`                    | Interactive setup wizard — configures bot token, IDs |
+| `remote-opencode start`                    | Start the Discord bot                                |
+| `remote-opencode deploy`                   | Deploy/update slash commands to Discord              |
+| `remote-opencode config`                   | Display current configuration info                   |
+| `remote-opencode allow add <userId>`       | Add a Discord user ID to the allowlist               |
+| `remote-opencode allow remove <userId>`    | Remove a Discord user ID from the allowlist          |
+| `remote-opencode allow list`               | List all user IDs in the allowlist                   |
+| `remote-opencode allow reset`              | Clear the entire allowlist (removes access control)  |
 
 ---
 
@@ -298,6 +303,27 @@ Control the automated job queue for the current thread.
 - `continue_on_failure`: If `True`, the bot moves to the next task even if the current one fails.
 - `fresh_context`: If `True` (default), the AI forgets previous chat history for each new queued task to improve performance, while maintaining the same code state.
 
+### `/allow` — Manage Allowlist
+
+Manage the user allowlist directly from Discord. This command is only available when the allowlist has already been initialized (at least one user exists).
+
+```
+/allow action:add user:@username
+/allow action:remove user:@username
+/allow action:list
+```
+
+| Parameter | Description                                  |
+| --------- | -------------------------------------------- |
+| `action`  | `add`, `remove`, or `list`                   |
+| `user`    | Target user (required for `add` and `remove`) |
+
+**Behavior:**
+
+- **Requires authorization** — only users already on the allowlist can use this command
+- **Cannot remove last user** — prevents accidental lockout
+- **Disabled when allowlist is empty** — initial setup must be done via CLI or setup wizard (see [Access Control](#access-control))
+
 ---
 
 ## Usage Workflow
@@ -369,6 +395,65 @@ Perfect for "setting and forgetting" several tasks:
 
 ---
 
+## Access Control
+
+remote-opencode supports an optional **user allowlist** to restrict who can interact with the bot. This is essential when your bot runs in a shared Discord server where untrusted users could otherwise execute commands on your machine.
+
+### How It Works
+
+- **No allowlist configured (default):** All Discord users in the server can use the bot. This preserves backward compatibility for existing installations.
+- **Allowlist configured (1+ user IDs):** Only users whose Discord IDs are in the allowlist can use slash commands, buttons, and passthrough messages. Unauthorized users receive a rejection message.
+
+### Setting Up Access Control
+
+> **⚠️ SECURITY WARNING: If your bot operates in a Discord channel accessible to untrusted users, you MUST configure the allowlist before starting the bot. The initial allowlist setup can ONLY be done via the CLI or the setup wizard — NOT from Discord. This prevents unauthorized users from adding themselves to an empty allowlist.**
+
+#### Option 1: Setup Wizard (Recommended for first-time setup)
+
+```bash
+remote-opencode setup
+```
+
+Step 5 of the wizard prompts you to enter your Discord user ID. This becomes the first entry in the allowlist.
+
+#### Option 2: CLI
+
+```bash
+# Add your Discord user ID
+remote-opencode allow add 123456789012345678
+
+# Verify
+remote-opencode allow list
+```
+
+### Managing the Allowlist
+
+Once at least one user is on the allowlist, authorized users can manage it from Discord:
+
+```
+/allow action:add user:@teammate
+/allow action:remove user:@teammate
+/allow action:list
+```
+
+Or via CLI at any time:
+
+```bash
+remote-opencode allow add <userId>
+remote-opencode allow remove <userId>
+remote-opencode allow list
+remote-opencode allow reset    # Clears entire allowlist (disables access control)
+```
+
+### Safety Guardrails
+
+- **Cannot remove the last user** via Discord `/allow` or CLI `allow remove` — prevents accidental lockout
+- **`allow reset`** is the only way to fully clear the allowlist (intentional action to disable access control)
+- **Discord `/allow` is disabled when allowlist is empty** — prevents bootstrap attacks
+- **Config file permissions** are set to `0o600` (owner-read/write only)
+
+---
+
 ## Configuration
 
 All configuration is stored in `~/.remote-opencode/`:
@@ -384,9 +469,12 @@ All configuration is stored in `~/.remote-opencode/`:
 {
   "discordToken": "your-bot-token",
   "clientId": "your-application-id",
-  "guildId": "your-server-id"
+  "guildId": "your-server-id",
+  "allowedUserIds": ["123456789012345678"]
 }
 ```
+
+> `allowedUserIds` is optional. When omitted or empty, access control is disabled and all users can use the bot.
 
 ### data.json Structure
 
@@ -509,6 +597,7 @@ src/
 │   ├── opencode.ts        # Main AI interaction command
 │   ├── code.ts            # Passthrough mode toggle
 │   ├── work.ts            # Worktree management
+│   ├── allow.ts           # Allowlist management
 │   ├── setpath.ts         # Project registration
 │   ├── projects.ts        # List projects
 │   └── use.ts             # Channel binding
@@ -539,6 +628,22 @@ src/
 ## Changelog
 
 See [CHANGELOG.md](CHANGELOG.md) for a full history of changes.
+
+### [1.2.0] - 2026-02-15
+
+#### Added
+
+- **Owner/Admin Authentication**: User allowlist system to restrict bot access to authorized Discord users only.
+- **`/allow` Slash Command**: Manage the allowlist directly from Discord (add, remove, list users).
+- **CLI Allowlist Management**: `remote-opencode allow add|remove|list|reset` commands for managing access control from the terminal.
+- **Setup Wizard Integration**: Step 5 prompts for owner Discord user ID during initial setup.
+
+#### Security
+
+- Initial allowlist setup is restricted to CLI and setup wizard only — prevents bootstrap attacks from Discord.
+- Config file permissions hardened to `0o600` (owner-read/write only).
+- Discord user ID validation enforces snowflake format (`/^\d{17,20}$/`).
+- Cannot remove the last authorized user via Discord or CLI `remove` — prevents lockout.
 
 ### [1.1.0] - 2026-02-05
 

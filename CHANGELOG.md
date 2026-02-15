@@ -2,6 +2,24 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.2.0] - 2026-02-15
+
+### Added
+- **Access Control (Allowlist)**: Restrict bot usage to specific Discord users via a user ID allowlist.
+  - **Setup wizard** (Step 5): Optionally set a bot owner during initial setup.
+  - **CLI commands**: `remote-opencode allow add <userId>`, `remove <userId>`, `list`, and `reset` for managing the allowlist from the terminal.
+  - **Discord `/allow` command**: Authorized users can manage the allowlist directly from Discord (`/allow add`, `/allow remove`, `/allow list`) — only available when at least one user is already on the allowlist.
+  - **Auth guards**: All Discord interactions (slash commands, buttons, passthrough messages) are checked against the allowlist.
+  - Unauthorized users receive an ephemeral "not authorized" message; passthrough messages are silently ignored.
+  - Empty allowlist = unrestricted mode (backward compatible — all server members can use the bot).
+  - Cannot remove the last allowed user via Discord (prevents lockout).
+
+### Security
+- Initial allowlist setup **must** be done via the CLI (`remote-opencode allow add`) or the setup wizard (`remote-opencode setup`). The Discord `/allow` command is intentionally disabled when the allowlist is empty to prevent unauthorized users from bootstrapping access.
+- Config directory (`~/.remote-opencode/`) is created with `0700` permissions (owner-only access).
+- Config file (`config.json`) is written with `0600` permissions (owner read/write only).
+- CLI `allow add` validates Discord snowflake format (17-20 digits).
+
 ## [1.1.1] - 2026-02-11
 
 ### Added
