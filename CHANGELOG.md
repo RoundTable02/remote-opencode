@@ -2,6 +2,17 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.3.0] - 2026-03-02
+
+### Added
+- **`/diff` Command**: View git diffs directly from Discord — ideal for reviewing AI-made changes on mobile.
+  - `target` option: `unstaged` (default), `staged`, or `branch`
+  - `stat` option: show `--stat` summary only instead of full diff
+  - `base` option: specify base branch for `target:branch` diffs (default: `main`)
+  - Inside a worktree thread → diffs the worktree path for that branch
+  - In a regular channel → diffs the channel-bound project path
+  - Output formatted in a `diff` code block; automatically truncated at Discord's 2000-char limit
+
 ## [1.2.0] - 2026-02-15
 
 ### Added

@@ -10,6 +10,7 @@ import { model } from './model.js';
 import { setports } from './setports.js';
 import { queue } from './queue.js';
 import { allow } from './allow.js';
+import { diff } from './diff.js';
 
 export interface Command {
   data: SlashCommandBuilder;
@@ -28,4 +29,5 @@ commands.set(model.data.name, model);
 commands.set(setports.data.name, setports as Command);
 commands.set(queue.data.name, queue);
 commands.set(allow.data.name, allow);
+commands.set(diff.data.name, diff);
 

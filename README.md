@@ -307,6 +307,41 @@ Control the automated job queue for the current thread.
 - `continue_on_failure`: If `True`, the bot moves to the next task even if the current one fails.
 - `fresh_context`: If `True` (default), the AI forgets previous chat history for each new queued task to improve performance, while maintaining the same code state.
 
+### `/diff` — View Git Diff
+
+Show git diffs for the current project directly in Discord — perfect for reviewing AI-made changes from your phone.
+
+```
+/diff
+/diff target:staged
+/diff target:branch base:develop
+/diff stat:true
+```
+
+| Parameter | Description                                                        |
+| --------- | ------------------------------------------------------------------ |
+| `target`  | `unstaged` (default), `staged`, or `branch`                       |
+| `stat`    | Show `--stat` summary only instead of full diff (default: `false`) |
+| `base`    | Base branch for `target:branch` diff (default: `main`)            |
+
+**How it works:**
+
+- Inside a **worktree thread** → diffs the worktree path for that branch
+- In a **regular channel** → diffs the channel-bound project path
+- Output is formatted in a `diff` code block (truncated if over Discord's 2000-char limit)
+
+**Examples:**
+
+```
+/diff                          → unstaged changes (git diff)
+/diff target:staged            → staged changes (git diff --cached)
+/diff target:branch            → changes vs main (git diff main...HEAD)
+/diff target:branch base:dev   → changes vs dev branch
+/diff stat:true                → summary only (git diff --stat)
+```
+
+---
+
 ### `/allow` — Manage Allowlist
 
 Manage the user allowlist directly from Discord. This command is only available when the allowlist has already been initialized (at least one user exists).
@@ -601,6 +636,7 @@ src/
 │   ├── opencode.ts        # Main AI interaction command
 │   ├── code.ts            # Passthrough mode toggle
 │   ├── work.ts            # Worktree management
+│   ├── diff.ts            # Git diff viewer
 │   ├── allow.ts           # Allowlist management
 │   ├── setpath.ts         # Project registration
 │   ├── projects.ts        # List projects
