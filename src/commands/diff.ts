@@ -1,13 +1,14 @@
 import { SlashCommandBuilder, ChatInputCommandInteraction, MessageFlags } from 'discord.js';
-import { exec } from 'node:child_process';
+import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
 import * as dataStore from '../services/dataStore.js';
 import type { Command } from './index.js';
 
-const execAsync = promisify(exec);
+const execFileAsync = promisify(execFile);
 
 const MAX_LENGTH = 1900;
 const CODE_BLOCK_OVERHEAD = 8; // ```diff\n...\n```
+const GIT_REF_PATTERN = /^[a-zA-Z0-9._\/-]+$/;
 
 function formatDiff(raw: string): string {
   const maxContent = MAX_LENGTH - CODE_BLOCK_OVERHEAD;
@@ -81,26 +82,31 @@ export const diff: Command = {
       return;
     }
 
+    if (target === 'branch' && !GIT_REF_PATTERN.test(base)) {
+      await i.reply({ content: '❌ Invalid base branch name.', flags: MessageFlags.Ephemeral });
+      return;
+    }
+
     await i.deferReply();
 
     try {
-      let gitArgs: string;
+      let gitArgs: string[];
       switch (target) {
         case 'staged':
-          gitArgs = 'git diff --cached';
+          gitArgs = ['diff', '--cached'];
           break;
         case 'branch':
-          gitArgs = `git diff ${base}...HEAD`;
+          gitArgs = ['diff', `${base}...HEAD`];
           break;
         default:
-          gitArgs = 'git diff';
+          gitArgs = ['diff'];
       }
 
       if (stat) {
-        gitArgs += ' --stat';
+        gitArgs.push('--stat');
       }
 
-      const { stdout } = await execAsync(gitArgs, { cwd: projectPath });
+      const { stdout } = await execFileAsync('git', gitArgs, { cwd: projectPath });
       const output = stdout.trim();
 
       if (!output) {
