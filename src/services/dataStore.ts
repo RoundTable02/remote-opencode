@@ -278,7 +278,7 @@ export function getQueueSettings(threadId: string): QueueSettings {
   return data.queueSettings?.[threadId] ?? {
     paused: false,
     continueOnFailure: false,
-    freshContext: true
+    freshContext: false
   };
 }
 
