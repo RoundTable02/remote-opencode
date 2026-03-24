@@ -43,7 +43,7 @@ describe('SSEClient', () => {
     it('should connect to SSE endpoint', () => {
       client.connect('http://127.0.0.1:3000');
 
-      expect(MockEventSource).toHaveBeenCalledWith('http://127.0.0.1:3000/event');
+      expect(MockEventSource).toHaveBeenCalledWith('http://127.0.0.1:3000/event', expect.anything());
     });
 
     it('should set up message event listener', () => {

@@ -90,3 +90,24 @@ export interface SessionErrorInfo {
     providerID?: string;
   };
 }
+
+export interface TokenUsage {
+  total?: number;
+  input: number;
+  output: number;
+  reasoning: number;
+  cache: {
+    read: number;
+    write: number;
+  };
+}
+
+export interface MessageUsageInfo {
+  sessionID: string;
+  messageID: string;
+  cost: number;
+  tokens: TokenUsage;
+  modelID?: string;
+  providerID?: string;
+  duration?: number; // ms from created to completed
+}

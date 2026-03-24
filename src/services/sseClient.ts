@@ -1,9 +1,11 @@
 import { EventSource } from 'eventsource';
-import type { TextPart, SSEEvent, SessionErrorInfo } from '../types/index.js';
+import type { TextPart, SSEEvent, SessionErrorInfo, MessageUsageInfo } from '../types/index.js';
+import { getAuthHeaders } from '../utils/authHelper.js';
 
 type PartUpdatedCallback = (part: TextPart) => void;
 type SessionIdleCallback = (sessionId: string) => void;
 type SessionErrorCallback = (sessionId: string, error: SessionErrorInfo) => void;
+type MessageUsageCallback = (usage: MessageUsageInfo) => void;
 type ErrorCallback = (error: Error) => void;
 
 export class SSEClient {
@@ -11,11 +13,23 @@ export class SSEClient {
   private partUpdatedCallbacks: PartUpdatedCallback[] = [];
   private sessionIdleCallbacks: SessionIdleCallback[] = [];
   private sessionErrorCallbacks: SessionErrorCallback[] = [];
+  private messageUsageCallbacks: MessageUsageCallback[] = [];
   private errorCallbacks: ErrorCallback[] = [];
 
   connect(baseUrl: string): void {
     const url = `${baseUrl}/event`;
-    this.eventSource = new EventSource(url);
+    const authHeaders = getAuthHeaders();
+
+    // eventsource v4 supports a custom fetch function for auth
+    this.eventSource = new EventSource(url, {
+      fetch: (input: string | URL | Request, init?: RequestInit) => {
+        const headers = new Headers(init?.headers);
+        for (const [key, value] of Object.entries(authHeaders)) {
+          headers.set(key, value);
+        }
+        return globalThis.fetch(input, { ...init, headers });
+      },
+    } as any);
 
     this.eventSource.addEventListener('message', (event: MessageEvent) => {
       try {
@@ -41,6 +55,10 @@ export class SSEClient {
 
   onSessionError(callback: SessionErrorCallback): void {
     this.sessionErrorCallbacks.push(callback);
+  }
+
+  onMessageUsage(callback: MessageUsageCallback): void {
+    this.messageUsageCallbacks.push(callback);
   }
 
   onError(callback: ErrorCallback): void {
@@ -69,6 +87,32 @@ export class SSEClient {
           text: part.text,
         };
         this.partUpdatedCallbacks.forEach((cb) => cb(textPart));
+      }
+    } else if (event.type === 'message.updated') {
+      // Extract usage info from completed assistant messages
+      const info = (event.properties as any).info;
+      if (info?.role === 'assistant' && info?.tokens && info?.finish) {
+        const usage: MessageUsageInfo = {
+          sessionID: info.sessionID,
+          messageID: info.id,
+          cost: info.cost ?? 0,
+          tokens: {
+            total: info.tokens.total,
+            input: info.tokens.input ?? 0,
+            output: info.tokens.output ?? 0,
+            reasoning: info.tokens.reasoning ?? 0,
+            cache: {
+              read: info.tokens.cache?.read ?? 0,
+              write: info.tokens.cache?.write ?? 0,
+            },
+          },
+          modelID: info.modelID,
+          providerID: info.providerID,
+        };
+        if (info.time?.created && info.time?.completed) {
+          usage.duration = info.time.completed - info.time.created;
+        }
+        this.messageUsageCallbacks.forEach((cb) => cb(usage));
       }
     } else if (event.type === 'session.idle') {
       const sessionID = (event.properties as any).sessionID;

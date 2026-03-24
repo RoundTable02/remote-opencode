@@ -1,0 +1,29 @@
+{
+  "$schema": "Configuration for remote-opencode. Copy this to remote-opencode.config.json and fill in your values.",
+
+  "telegram": {
+    "token": "",
+    "allowedChatIds": []
+  },
+
+  "discord": {
+    "token": "",
+    "clientId": "",
+    "guildId": ""
+  },
+
+  "projectsBasePaths": [
+    "~/projects"
+  ],
+
+  "openCodeConfigPath": "~/projects/opencode.json",
+
+  "allowedUserIds": [],
+
+  "openaiApiKey": "",
+
+  "ports": {
+    "min": 14097,
+    "max": 14200
+  }
+}

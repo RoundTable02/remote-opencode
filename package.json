@@ -1,7 +1,7 @@
 {
   "name": "remote-opencode",
   "version": "1.5.0",
-  "description": "Discord bot for remote OpenCode CLI access",
+  "description": "Discord & Telegram bot for remote OpenCode CLI access",
   "main": "dist/src/index.js",
   "bin": {
     "remote-opencode": "./dist/src/cli.js"
@@ -26,6 +26,7 @@
   },
   "keywords": [
     "discord",
+    "telegram",
     "opencode",
     "cli",
     "remote",
@@ -39,7 +40,9 @@
     "@types/eventsource": "^1.1.15",
     "commander": "^13.1.0",
     "discord.js": "^14.25.1",
+    "dotenv": "^17.3.1",
     "eventsource": "^4.1.0",
+    "grammy": "^1.41.1",
     "node-pty": "^1.1.0",
     "open": "^10.1.0",
     "opencode-antigravity-auth": "^1.4.6",

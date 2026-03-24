@@ -3,6 +3,7 @@ import { join } from 'node:path';
 import { homedir } from 'node:os';
 import type { DataStore, ProjectConfig, ChannelBinding, ThreadSession, WorktreeMapping, PassthroughThread, QueuedMessage, QueueSettings } from '../types/index.js';
 import { sanitizeModel } from '../utils/stringUtils.js';
+import { discoverProjects } from './configStore.js';
 
 
 const CONFIG_DIR = join(homedir(), '.remote-opencode');
@@ -43,12 +44,37 @@ export function addProject(alias: string, path: string): void {
   saveData(data);
 }
 
+/**
+ * Get all projects: manually registered + auto-discovered from base paths.
+ * Manual projects take priority over discovered ones with the same alias.
+ */
 export function getProjects(): ProjectConfig[] {
-  return loadData().projects;
+  const manual = loadData().projects;
+  const discovered = discoverProjects();
+
+  const manualAliases = new Set(manual.map(p => p.alias));
+  const merged = [...manual];
+
+  for (const d of discovered) {
+    if (!manualAliases.has(d.alias)) {
+      merged.push({ alias: d.alias, path: d.path });
+    }
+  }
+
+  return merged.sort((a, b) => a.alias.localeCompare(b.alias));
 }
 
+/**
+ * Get a single project by alias. Checks manual first, then discovered.
+ */
 export function getProject(alias: string): ProjectConfig | undefined {
-  return loadData().projects.find(p => p.alias === alias);
+  const manual = loadData().projects.find(p => p.alias === alias);
+  if (manual) return manual;
+
+  const discovered = discoverProjects().find(d => d.alias === alias);
+  if (discovered) return { alias: discovered.alias, path: discovered.path };
+
+  return undefined;
 }
 
 export function removeProject(alias: string): boolean {
@@ -291,5 +317,20 @@ export function updateQueueSettings(threadId: string, settings: Partial<QueueSet
     ...settings
   };
   saveData(data);
+}
+
+// Stats visibility (in-memory, default: show)
+const statsHidden = new Set<string>();
+
+export function setStatsVisible(threadId: string, visible: boolean): void {
+  if (visible) {
+    statsHidden.delete(threadId);
+  } else {
+    statsHidden.add(threadId);
+  }
+}
+
+export function isStatsVisible(threadId: string): boolean {
+  return !statsHidden.has(threadId);
 }
 

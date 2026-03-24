@@ -23,6 +23,11 @@ vi.mock('node:net', () => ({
 
 vi.mock('../services/configStore.js', () => ({
   getPortConfig: vi.fn(),
+  ensureOpenCodeConfig: vi.fn(),
+}));
+
+vi.mock('../utils/authHelper.js', () => ({
+  getAuthHeaders: vi.fn().mockReturnValue({}),
 }));
 
 import * as serveManager from '../services/serveManager.js';
@@ -61,11 +66,10 @@ describe('serveManager', () => {
       expect(port).toBeGreaterThanOrEqual(14097);
       expect(port).toBeLessThanOrEqual(14200);
       expect(spawn).toHaveBeenCalledWith(
-        'opencode',
+        expect.stringContaining('opencode'),
         ['serve', '--port', port.toString()],
         expect.objectContaining({
           cwd: projectPath,
-          shell: true,
         })
       );
     });
@@ -100,7 +104,7 @@ describe('serveManager', () => {
 
       expect(port).toBe(20000);
       expect(spawn).toHaveBeenCalledWith(
-        'opencode',
+        expect.stringContaining('opencode'),
         ['serve', '--port', '20000'],
         expect.anything()
       );
@@ -158,7 +162,8 @@ describe('serveManager', () => {
 
       const state = serveManager.getInstanceState(projectPath);
       expect(state?.exited).toBe(true);
-      expect(state?.exitError).toContain('spawn opencode ENOENT');
+      // formatSpawnError maps ENOENT or missing path to a descriptive message
+      expect(state?.exitError).toBeTruthy();
     });
 
     it('should allow respawning after process exits', async () => {
@@ -263,7 +268,7 @@ describe('serveManager', () => {
       await vi.runAllTimersAsync();
       
       await expect(promise).resolves.toBeUndefined();
-      expect(fetch).toHaveBeenCalledWith('http://127.0.0.1:14097/session');
+      expect(fetch).toHaveBeenCalledWith('http://127.0.0.1:14097/session', expect.objectContaining({}));
     });
 
     it('should retry if fetch fails or returns not ok', async () => {

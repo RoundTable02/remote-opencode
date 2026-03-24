@@ -2,6 +2,35 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.5.1] - 2026-03-24
+
+### Added
+
+- **Telegram Bot** — full implementation using [grammy](https://grammy.dev/)
+  - `/vibe_coding` & `/stop_coding` — passthrough coding sessions
+  - `/sps` — index-based clickable project list (`/sp1 - myproject`, `/sp2 - open-webui`)
+  - `/lm` — index-based clickable model list (`/sm1 - provider/model-id`)
+  - `/sp <name>` — short alias for `/switch_project`
+  - `/switch_project` & `/switch_model` — switch by full name
+  - `/status`, `/diff`, `/interrupt`, `/queue_list`, `/queue_clear`
+  - Smart `/start` onboarding (adapts to unconfigured / no project / ready states)
+  - Real-time SSE streaming with in-place message editing
+  - Voice messages via OpenAI Whisper
+  - Forum topics support
+- **Index-based shortcuts** — `/sp1`..`/spN` and `/sm1`..`/smN` always within Telegram's 64-char command limit. Full name shown next to each index. Stats footer references them too: `sp1 - myproject | Branch: main | sm2 - claude-sonnet`
+- **Token usage & cost stats** — shown after each response, toggle with `/hide_stats` / `/show_stats`
+- **Auto-project discovery** — set `projectsBasePaths` and all subdirectories are projects automatically
+- **Three-tier config** — `remote-opencode.config.json` > `.env` > `~/.remote-opencode/config.json`
+  - `remote-opencode configure` — unified guided wizard
+  - `remote-opencode.config.example.json` and `.env.example` templates
+- **OpenCode server Basic Auth** — reads `OPENCODE_SERVER_USERNAME` / `OPENCODE_SERVER_PASSWORD` automatically for all HTTP and SSE connections
+- **Auto-symlink opencode.json** — default config symlinked into projects that don't have their own
+- **Clean response output** — streaming shows only AI output; all meta info in stats footer
+
+### Fixed
+
+- Removed `shell: true` from `opencode serve` spawn (cherry-picked from upstream `fix/issue-40-shell-spawn`) — binary resolved explicitly from `$PATH`, better ENOENT/EACCES error messages
+
 ## [Unreleased]
 
 ### Added

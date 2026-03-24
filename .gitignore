@@ -9,6 +9,9 @@ dist/
 .env.local
 .env.*.local
 
+# Local config (contains tokens/secrets - use remote-opencode.config.example.json as template)
+remote-opencode.config.json
+
 # Data files (may contain user-specific bindings)
 data/
 
@@ -38,3 +41,4 @@ coverage/
 
 # Sisyphus plans (development notes)
 .sisyphus/
+opencode.json

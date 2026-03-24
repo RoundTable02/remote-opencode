@@ -1,6 +1,7 @@
 import type { SSEClient } from './sseClient.js';
 import * as dataStore from './dataStore.js';
 import { sanitizeModel } from '../utils/stringUtils.js';
+import { getAuthHeadersWithJson, getAuthHeaders } from '../utils/authHelper.js';
 
 const threadSseClients = new Map<string, SSEClient>();
 
@@ -8,7 +9,7 @@ export async function createSession(port: number): Promise<string> {
   const url = `http://127.0.0.1:${port}/session`;
   const response = await fetch(url, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: getAuthHeadersWithJson(),
     body: '{}',
   });
 
@@ -53,7 +54,7 @@ export async function sendPrompt(port: number, sessionId: string, text: string, 
 
   const response = await fetch(url, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: getAuthHeadersWithJson(),
     body: JSON.stringify(body),
   });
 
@@ -68,7 +69,7 @@ export async function validateSession(port: number, sessionId: string): Promise<
     const url = `http://127.0.0.1:${port}/session/${sessionId}`;
     const response = await fetch(url, {
       method: 'GET',
-      headers: { 'Content-Type': 'application/json' },
+      headers: getAuthHeadersWithJson(),
     });
     return response.ok;
   } catch {
@@ -81,7 +82,7 @@ export async function getSessionInfo(port: number, sessionId: string): Promise<S
     const url = `http://127.0.0.1:${port}/session/${sessionId}`;
     const response = await fetch(url, {
       method: 'GET',
-      headers: { 'Content-Type': 'application/json' },
+      headers: getAuthHeadersWithJson(),
     });
     if (!response.ok) return null;
     const data = await response.json();
@@ -101,7 +102,7 @@ export async function listSessions(port: number): Promise<SessionInfo[]> {
     const url = `http://127.0.0.1:${port}/session`;
     const response = await fetch(url, {
       method: 'GET',
-      headers: { 'Content-Type': 'application/json' },
+      headers: getAuthHeadersWithJson(),
     });
     
     if (!response.ok) {
@@ -126,6 +127,7 @@ export async function abortSession(port: number, sessionId: string): Promise<boo
     const url = `http://127.0.0.1:${port}/session/${sessionId}/abort`;
     const response = await fetch(url, {
       method: 'POST',
+      headers: getAuthHeaders(),
     });
     return response.ok;
   } catch {

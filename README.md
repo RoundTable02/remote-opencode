@@ -8,11 +8,11 @@
 <img width="1024" alt="remote-opencode logo" src="./asset/remo-code-logo.png" />
 </div>
 
-> 🆕 **New in v1.5!** Session management — browse, attach, and manage OpenCode CLI sessions from Discord with `/session`. Plus: model autocomplete for `/model set`. [See changelog](#changelog)
+> 🆕 **New in v1.5.1!** Telegram bot support with vibe coding mode, auto-project discovery, token usage stats, and a unified config system. [See changelog](#changelog)
 >
 > 🎤 **v1.4:** Voice message support — send voice messages that are automatically transcribed and processed. [See demo](#-voice-mode-demo)
 
-**remote-opencode** is a Discord bot that bridges your local [OpenCode CLI](https://github.com/sst/opencode) to Discord, enabling you to interact with your AI coding assistant remotely. Perfect for developers who want to:
+**remote-opencode** is a Discord & Telegram bot that bridges your local [OpenCode CLI](https://github.com/sst/opencode) to your favorite messaging platform, enabling you to interact with your AI coding assistant remotely. Perfect for developers who want to:
 
 - 📱 **Code from mobile** — Send coding tasks from your phone while away from your desk
 - 💻 **Access from any device** — Use your powerful dev machine from a laptop or tablet
@@ -24,24 +24,24 @@
 ## How It Works
 
 ```
-┌─────────────────┐    Discord API    ┌─────────────────┐
-│  Your Phone /   │ ◄──────────────► │  Discord Bot    │
-│  Other Device   │                   │  (this project) │
-└─────────────────┘                   └────────┬────────┘
-                                               │
-                                               ▼
-                                      ┌─────────────────┐
-                                      │  OpenCode CLI   │
-                                      │  (your machine) │
-                                      └────────┬────────┘
-                                               │
-                                               ▼
-                                      ┌─────────────────┐
-                                      │  Your Codebase  │
-                                      └─────────────────┘
+┌─────────────────┐  Discord / Telegram  ┌─────────────────┐
+│  Your Phone /   │ ◄──────────────────► │  Bot            │
+│  Other Device   │                      │  (this project) │
+└─────────────────┘                      └────────┬────────┘
+                                                  │
+                                                  ▼
+                                         ┌─────────────────┐
+                                         │  OpenCode CLI   │
+                                         │  (your machine) │
+                                         └────────┬────────┘
+                                                  │
+                                                  ▼
+                                         ┌─────────────────┐
+                                         │  Your Codebase  │
+                                         └─────────────────┘
 ```
 
-The bot runs on your development machine alongside OpenCode. When you send a command via Discord, it's forwarded to OpenCode, and the output streams back to you in real-time.
+The bot runs on your development machine alongside OpenCode. When you send a command via Discord or Telegram, it's forwarded to OpenCode, and the output streams back to you in real-time.
 
 ## Demo
 
@@ -59,8 +59,10 @@ https://github.com/user-attachments/assets/59cf162a-ec86-41b5-a1f3-9b1379acd9fd
 - [Quick Start](#quick-start)
 - [Proxy Support](#proxy-support)
 - [Discord Bot Setup](#discord-bot-setup)
+- [Telegram Bot Setup](#telegram-bot-setup)
 - [CLI Commands](#cli-commands)
 - [Discord Slash Commands](#discord-slash-commands)
+- [Telegram Commands](#telegram-commands)
 - [Usage Workflow](#usage-workflow)
 - [Access Control](#access-control)
 - [Configuration](#configuration)
@@ -77,7 +79,7 @@ https://github.com/user-attachments/assets/59cf162a-ec86-41b5-a1f3-9b1379acd9fd
 
 - **Node.js 22+** — [Download](https://nodejs.org/)
 - **OpenCode CLI** — Must be installed and working on your machine
-- **Discord Account** — With a server where you have admin permissions
+- **Discord Account** and/or **Telegram Account** — for connecting to your bot
 
 ### Install via npm
 
@@ -103,6 +105,8 @@ npm link  # Makes 'remote-opencode' available globally
 
 ## Quick Start
 
+### Discord
+
 ```bash
 # Step 1: Run the interactive setup wizard
 remote-opencode setup
@@ -111,7 +115,27 @@ remote-opencode setup
 remote-opencode start
 ```
 
-That's it! Now use Discord slash commands to interact with OpenCode.
+### Telegram
+
+```bash
+# Option A: Use the unified configure wizard (recommended)
+remote-opencode configure
+remote-opencode telegram start
+
+# Option B: Use a config file
+# 1. Copy the example config and fill in your values
+cp remote-opencode.config.example.json remote-opencode.config.json
+# 2. Start the bot
+remote-opencode telegram start
+
+# Option C: Use environment variables
+# 1. Copy .env.example to .env and fill in TELEGRAM_BOT_TOKEN
+cp .env.example .env
+# 2. Start the bot
+remote-opencode telegram start
+```
+
+Get your Telegram bot token from [@BotFather](https://t.me/BotFather) on Telegram.
 
 ---
 
@@ -174,15 +198,99 @@ If you prefer manual setup or need to troubleshoot:
 
 ---
 
+## Telegram Bot Setup
+
+### Option 1: Unified Configure Wizard (Recommended)
+
+```bash
+remote-opencode configure
+```
+
+The wizard guides you through everything in one go:
+1. Projects base path (e.g. `~/IdeaProjects`) — all subdirectories are auto-discovered as projects
+2. Default `opencode.json` config path — auto-symlinked into projects that don't have their own
+3. Telegram bot token (from [@BotFather](https://t.me/BotFather))
+4. Optional: Discord bot credentials
+5. Optional: OpenAI API key for voice transcription
+
+Configuration is saved to `remote-opencode.config.json` (gitignored).
+
+### Option 2: Config File
+
+Copy the example and fill in your values:
+
+```bash
+cp remote-opencode.config.example.json remote-opencode.config.json
+```
+
+```json
+{
+  "telegram": {
+    "token": "your-bot-token-from-botfather"
+  },
+  "projectsBasePaths": ["~/IdeaProjects"],
+  "openCodeConfigPath": "~/IdeaProjects/opencode.json"
+}
+```
+
+Then start: `remote-opencode telegram start`
+
+### Option 3: Environment Variables
+
+Create a `.env` file (see `.env.example`):
+
+```bash
+TELEGRAM_BOT_TOKEN=your-bot-token
+PROJECTS_BASE_PATH=~/IdeaProjects
+OPENCODE_CONFIG_PATH=~/IdeaProjects/opencode.json
+```
+
+### Config Priority
+
+Configuration is resolved in this order (first match wins):
+1. `remote-opencode.config.json` (local project file, gitignored)
+2. `.env` / environment variables
+3. `~/.remote-opencode/config.json` (legacy global config)
+
+### Setting Up Bot Commands (Optional)
+
+To get a nice command menu in Telegram, send this to [@BotFather](https://t.me/BotFather):
+
+1. Send `/setcommands`
+2. Select your bot
+3. Paste:
+
+```
+start - Smart onboarding & status
+help - Show available commands
+vibe_coding - Start a vibe coding session
+stop_coding - Stop the current session
+list_projects - Show all available projects
+switch_project - Switch to a different project
+switch_model - Switch the AI model
+list_models - Show available models
+status - Show current project, model & session
+diff - Show git diff
+interrupt - Interrupt current task
+hide_stats - Hide token usage & costs
+show_stats - Show token usage & costs
+```
+
+---
+
 ## CLI Commands
 
 | Command                                 | Description                                          |
 | --------------------------------------- | ---------------------------------------------------- |
 | `remote-opencode`                       | Start the bot (shows setup guide if not configured)  |
-| `remote-opencode setup`                 | Interactive setup wizard — configures bot token, IDs |
+| `remote-opencode configure`             | Interactive config wizard for all settings            |
+| `remote-opencode setup`                 | Interactive Discord-only setup wizard                |
 | `remote-opencode start`                 | Start the Discord bot                                |
 | `remote-opencode deploy`                | Deploy/update slash commands to Discord              |
 | `remote-opencode config`                | Display current configuration info                   |
+| `remote-opencode telegram start`        | Start the Telegram bot                               |
+| `remote-opencode telegram setup`        | Interactive Telegram-only setup wizard               |
+| `remote-opencode telegram config`       | Show Telegram configuration info                     |
 | `remote-opencode allow add <userId>`    | Add a Discord user ID to the allowlist               |
 | `remote-opencode allow remove <userId>` | Remove a Discord user ID from the allowlist          |
 | `remote-opencode allow list`            | List all user IDs in the allowlist                   |
@@ -492,6 +600,108 @@ Browse OpenCode CLI sessions and manage session-thread mappings. Useful for resu
 
 ---
 
+## Telegram Commands
+
+The Telegram bot features a conversational UX with smart onboarding and vibe coding mode. All commands are designed for one-handed mobile use.
+
+### Core Commands
+
+| Command | Description |
+|---|---|
+| `/start` | Smart onboarding — detects config state and guides you step by step |
+| `/help` | Show all available commands |
+| `/vibe_coding` | Start a vibe coding session (passthrough mode) |
+| `/stop_coding` | Stop the current vibe coding session |
+| `/list_projects` | Show all projects with readable names |
+| `/lp` | Alias for `/list_projects` |
+| `/switch_project <name>` | Switch to a different project by name |
+| `/list_models` | Show available models with readable names |
+| `/lm` | Show clickable model shortcuts (tap to switch, no typing needed) |
+| `/switch_model <name>` | Switch AI model by full name |
+| `/status` | Show current project, branch, model, session & queue |
+| `/diff` | Show git diff of current project |
+| `/interrupt` | Interrupt the current running task |
+| `/hide_stats` | Hide token usage, costs & meta info after responses |
+| `/show_stats` | Show token usage, costs & meta info after responses |
+| `/opencode <prompt>` | One-shot prompt (without entering vibe coding mode) |
+| `/queue_list` | Show queued tasks |
+| `/queue_clear` | Clear the task queue |
+
+### Clickable Shortcuts
+
+| Shortcut | How it appears | Description |
+|---|---|---|
+| `/sp1`, `/sp2`, ... | In `/sps` output | Tap to switch project — index shown next to name |
+| `/sm1`, `/sm2`, ... | In `/lm` output | Tap to switch model — index shown next to full model ID |
+| `/sp_<alias>` | Legacy (still works) | Encoded alias, only works for short names without dots |
+
+**Why indices instead of encoded names?**
+Telegram commands have a 64-character limit. Long model IDs like `eu.anthropic.claude-3-5-sonnet-20240620-v1:0` exceed that when encoded. Index-based shortcuts are always short (`/sm1`..`/sm99`) and always clickable — regardless of name length.
+
+**The index is shown next to the full name**, so you always know what you're tapping:
+```
+/sm1 - AIC Bedrock/eu.anthropic.claude-sonnet-4-6
+/sm2 - AIC Bedrock/eu.anthropic.claude-haiku-4-5-20251001-v1:0  << current
+/sm3 - AIC Azure/gpt-5.2
+```
+
+The registry is rebuilt each time you call `/sps` or `/lm`. Stats also reference the index:
+```
+sp3 - remote-opencode | Branch: main | sm1 - AIC Bedrock/claude-sonnet-4-6
+```
+
+### The Vibe Coding Flow
+
+The intended way to use the Telegram bot from mobile:
+
+```
+1. /sps                   → tap to switch project:
+   /sp1 - remote-opencode
+   /sp2 - open-webui << current
+   /sp3 - blog.weisser.dev
+
+2. /lm                    → tap to switch model:
+   /sm1 - AIC Bedrock/eu.anthropic.claude-sonnet-4-6
+   /sm2 - AIC Bedrock/eu.anthropic.claude-haiku-4-5  << current
+   /sm3 - AIC Azure/gpt-5.2
+
+3. /vibe_coding            → start session
+   "fix the login bug"    → type freely, no /command prefix
+   "add unit tests"       → same session, same context
+
+4. /stop_coding            → end session
+```
+
+After each response, stats appear with shortcut references:
+```
+Tokens: 15.0K in / 47 out
+Cost: $0.00
+Time: 3.8s
+sp1 - remote-opencode | Branch: main | sm1 - AIC Bedrock/claude-sonnet-4-6
+/hide_stats to hide
+```
+
+### Smart Onboarding
+
+The `/start` command adapts to your setup state:
+- **Not configured** — guides you to run `remote-opencode configure`
+- **Configured, no project selected** — shows base paths and project count, prompts to pick one
+- **Ready** — shows current project & model, offers `/vibe_coding`
+
+### Auto-Discovery
+
+When `projectsBasePaths` is configured (e.g. `~/IdeaProjects`), all subdirectories are automatically available as projects — no manual `/setpath` needed.
+
+### Additional Features
+
+- **Voice messages** — Send voice messages transcribed via OpenAI Whisper (requires OpenAI API key)
+- **Forum topics support** — Works in Telegram groups with forum/topic mode enabled
+- **Queue system** — Messages sent while busy are automatically queued and processed sequentially
+- **OpenCode server auto-start** — The OpenCode server is spawned automatically on first prompt
+- **Basic Auth support** — Reads `OPENCODE_SERVER_USERNAME` / `OPENCODE_SERVER_PASSWORD` from environment automatically
+
+---
+
 ## Usage Workflow
 
 ### Basic Workflow
@@ -622,46 +832,63 @@ remote-opencode allow reset    # Clears entire allowlist (disables access contro
 
 ## Configuration
 
-All configuration is stored in `~/.remote-opencode/`:
+Configuration can come from three sources (priority order):
 
-| File          | Purpose                                       |
-| ------------- | --------------------------------------------- |
-| `config.json` | Bot credentials (token, client ID, guild ID)  |
-| `data.json`   | Project paths, channel bindings, session data |
+| Source | File | Description |
+|---|---|---|
+| 1. Local config | `remote-opencode.config.json` | Project-level config (gitignored). Created by `remote-opencode configure` |
+| 2. Environment | `.env` / env vars | Environment variables (gitignored) |
+| 3. Legacy config | `~/.remote-opencode/config.json` | Global config from older versions |
 
-### config.json Structure
+### remote-opencode.config.json (Recommended)
+
+Created by `remote-opencode configure` or copy from `remote-opencode.config.example.json`:
 
 ```json
 {
-  "discordToken": "your-bot-token",
-  "clientId": "your-application-id",
-  "guildId": "your-server-id",
-  "allowedUserIds": ["123456789012345678"],
-  "openaiApiKey": "sk-..."
+  "telegram": {
+    "token": "your-bot-token",
+    "allowedChatIds": []
+  },
+  "discord": {
+    "token": "",
+    "clientId": "",
+    "guildId": ""
+  },
+  "projectsBasePaths": ["~/IdeaProjects"],
+  "openCodeConfigPath": "~/IdeaProjects/opencode.json",
+  "allowedUserIds": [],
+  "openaiApiKey": "",
+  "ports": { "min": 14097, "max": 14200 }
 }
 ```
 
-> `allowedUserIds` is optional. When omitted or empty, access control is disabled and all users can use the bot.
-> `openaiApiKey` is optional. When omitted, voice message transcription is disabled. Can also be set via `OPENAI_API_KEY` environment variable (takes priority).
+### .env Variables
 
-### data.json Structure
+```bash
+TELEGRAM_BOT_TOKEN=        # Telegram bot token
+DISCORD_BOT_TOKEN=         # Discord bot token
+DISCORD_CLIENT_ID=         # Discord application ID
+DISCORD_GUILD_ID=          # Discord server ID
+PROJECTS_BASE_PATH=        # Base path(s), colon-separated
+OPENCODE_CONFIG_PATH=      # Default opencode.json path
+OPENAI_API_KEY=            # For voice transcription
+```
+
+### data.json
+
+Stored in `~/.remote-opencode/data.json` — project bindings, sessions, queues:
 
 ```json
 {
   "projects": [
-    { "alias": "myapp", "path": "/Users/you/projects/my-app", "autoWorktree": true }
+    { "alias": "myapp", "path": "/Users/you/projects/my-app" }
   ],
   "bindings": [
-    { "channelId": "channel-id", "projectAlias": "myapp" }
-  ],
-  "threadSessions": [ ... ],
-  "worktreeMappings": [ ... ]
+    { "channelId": "chat-id", "projectAlias": "myapp" }
+  ]
 }
 ```
-
-| Field                     | Description                                               |
-| ------------------------- | --------------------------------------------------------- |
-| `projects[].autoWorktree` | Optional. When `true`, new sessions auto-create worktrees |
 
 ---
 
@@ -767,7 +994,7 @@ npm test
 src/
 ├── cli.ts                 # CLI entry point
 ├── bot.ts                 # Discord client initialization
-├── commands/              # Slash command definitions
+├── commands/              # Discord slash command definitions
 │   ├── opencode.ts        # Main AI interaction command
 │   ├── code.ts            # Passthrough mode toggle
 │   ├── work.ts            # Worktree management
@@ -779,11 +1006,17 @@ src/
 │   ├── setpath.ts         # Project registration
 │   ├── projects.ts        # List projects
 │   └── use.ts             # Channel binding
-├── handlers/              # Interaction handlers
+├── telegram/              # Telegram bot implementation
+│   ├── telegramBot.ts     # Telegram bot bootstrap (grammy)
+│   ├── telegramHandlers.ts        # Command & message handlers
+│   ├── telegramExecutionService.ts # Prompt execution for Telegram
+│   ├── telegramQueueManager.ts    # Queue processing for Telegram
+│   └── telegramFormatter.ts       # Telegram message formatting
+├── handlers/              # Discord interaction handlers
 │   ├── interactionHandler.ts
 │   ├── buttonHandler.ts
 │   └── messageHandler.ts  # Passthrough + voice message handling
-├── services/              # Core business logic
+├── services/              # Core business logic (shared)
 │   ├── serveManager.ts    # OpenCode process management
 │   ├── sessionManager.ts  # Session state management
 │   ├── queueManager.ts    # Automated job queuing (incl. voice)
@@ -793,11 +1026,14 @@ src/
 │   ├── dataStore.ts       # Persistent storage
 │   ├── configStore.ts     # Bot configuration
 │   └── worktreeManager.ts # Git worktree operations
-├── setup/                 # Setup wizard
-│   ├── wizard.ts          # Interactive setup (incl. voice opt-in)
-│   └── deploy.ts          # Command deployment
+├── setup/                 # Setup wizards
+│   ├── wizard.ts          # Discord setup (incl. voice opt-in)
+│   ├── telegramWizard.ts  # Telegram setup
+│   ├── configureWizard.ts # Unified config wizard (remote-opencode configure)
+│   └── deploy.ts          # Discord command deployment
 └── utils/                 # Utilities
     ├── messageFormatter.ts
+    ├── authHelper.ts      # OpenCode server Basic Auth handling
     └── threadHelper.ts
 ```
 
@@ -806,6 +1042,36 @@ src/
 ## Changelog
 
 See [CHANGELOG.md](CHANGELOG.md) for a full history of changes.
+
+### [1.5.1] - 2026-03-24
+
+#### Added
+
+- **Telegram Bot Support**: Full Telegram bot implementation using [grammy](https://grammy.dev/) with conversational UX and vibe coding mode.
+  - `/vibe_coding` & `/stop_coding` — start/stop passthrough coding sessions
+  - `/sps` — index-based clickable project shortcuts (`/sp1 - myproject`)
+  - `/lm` — index-based clickable model shortcuts (`/sm1 - provider/model-id`)
+  - `/sp <name>` — short alias for `/switch_project`
+  - `/switch_project` & `/switch_model` — change project/model by name
+  - `/status`, `/diff`, `/interrupt` — monitor and control
+  - Smart `/start` onboarding that adapts to config state
+  - Real-time streaming with in-place message editing
+  - Voice message support via OpenAI Whisper
+  - Forum topics support
+- **Index-based Shortcuts**: `/sp1`..`/spN` and `/sm1`..`/smN` — always within Telegram's 64-char command limit. Full name shown next to each index. Registry rebuilt on each `/sps` or `/lm` call.
+- **Token Usage & Cost Stats**: After each response, shows tokens, cost, duration, project shortcut, branch, and model shortcut. Toggle with `/hide_stats` and `/show_stats`.
+- **Auto-Project Discovery**: Configure `projectsBasePaths` (e.g. `~/IdeaProjects`) and all subdirectories are automatically available as projects — no manual `/setpath` needed.
+- **Unified Config System**: Three-tier config with priority: `remote-opencode.config.json` > `.env` > `~/.remote-opencode/config.json`.
+  - `remote-opencode configure` — guided wizard for all settings in one go
+  - `remote-opencode.config.example.json` — template file
+  - `.env.example` — environment variable template
+- **OpenCode Server Auth**: Automatic Basic Auth — reads `OPENCODE_SERVER_USERNAME` / `OPENCODE_SERVER_PASSWORD` from environment for all HTTP and SSE connections.
+- **Auto-Symlink opencode.json**: When `openCodeConfigPath` is configured, the default config is symlinked into projects that don't have their own.
+- **Clean Response Output**: Streaming responses show only the AI output. All meta info is bundled in the stats footer.
+
+#### Fixed
+
+- `shell: true` removed from `opencode serve` spawn — cherry-picked from upstream `fix/issue-40-shell-spawn`. Binary is now resolved explicitly from `$PATH`, with better ENOENT/EACCES error messages.
 
 ### [1.5.0] - 2026-03-16
 

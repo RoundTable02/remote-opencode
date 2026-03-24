@@ -1,13 +1,17 @@
 #!/usr/bin/env node
 process.removeAllListeners('warning');
+import 'dotenv/config';
 import { Command } from 'commander';
 import pc from 'picocolors';
 import { createRequire } from 'module';
 import updateNotifier from 'update-notifier';
 import { runSetupWizard } from './setup/wizard.js';
+import { runTelegramSetupWizard } from './setup/telegramWizard.js';
+import { runConfigureWizard } from './setup/configureWizard.js';
 import { deployCommands } from './setup/deploy.js';
 import { startBot } from './bot.js';
-import { hasBotConfig, getConfigDir, getAllowedUserIds, addAllowedUserId, removeAllowedUserId, setAllowedUserIds, getOpenAIApiKey, setOpenAIApiKey, removeOpenAIApiKey } from './services/configStore.js';
+import { startTelegramBot } from './telegram/telegramBot.js';
+import { hasBotConfig, hasTelegramConfig, getConfigDir, getLocalConfigPath, getAllowedUserIds, addAllowedUserId, removeAllowedUserId, setAllowedUserIds, getOpenAIApiKey, setOpenAIApiKey, removeOpenAIApiKey, getProjectsBasePaths, getOpenCodeConfigPath } from './services/configStore.js';
 
 const require = createRequire(import.meta.url);
 // In dev mode (src/cli.ts), package.json is one level up
@@ -26,7 +30,7 @@ const program = new Command();
 
 program
   .name('remote-opencode')
-  .description('Discord bot for remote OpenCode CLI access')
+  .description('Discord & Telegram bot for remote OpenCode CLI access')
   .version(pkg.version);
 
 program
@@ -69,12 +73,34 @@ program
   });
 
 program
+  .command('configure')
+  .description('Interactive configuration wizard for all settings')
+  .action(async () => {
+    await runConfigureWizard();
+  });
+
+program
   .command('config')
   .description('Show configuration info')
   .action(() => {
     console.log(pc.bold('\nConfiguration:'));
-    console.log(`  Config directory: ${pc.cyan(getConfigDir())}`);
-    console.log(`  Bot configured: ${hasBotConfig() ? pc.green('Yes') : pc.red('No')}`);
+    const localPath = getLocalConfigPath();
+    if (localPath) {
+      console.log(`  Local config:     ${pc.cyan(localPath)}`);
+    }
+    console.log(`  Legacy config:    ${pc.cyan(getConfigDir())}`);
+    console.log(`  Discord:          ${hasBotConfig() ? pc.green('configured') : pc.dim('not configured')}`);
+    console.log(`  Telegram:         ${hasTelegramConfig() ? pc.green('configured') : pc.dim('not configured')}`);
+    const basePaths = getProjectsBasePaths();
+    if (basePaths.length > 0) {
+      console.log(`  Projects base:    ${pc.cyan(basePaths.join(', '))}`);
+    } else {
+      console.log(`  Projects base:    ${pc.dim('not configured')}`);
+    }
+    const ocConfig = getOpenCodeConfigPath();
+    if (ocConfig) {
+      console.log(`  OpenCode config:  ${pc.cyan(ocConfig)}`);
+    }
     console.log();
   });
 
@@ -170,22 +196,62 @@ voiceCmd
     }
   });
 
+// Telegram commands
+const telegramCmd = program.command('telegram').description('Manage the Telegram bot');
+
+telegramCmd
+  .command('start')
+  .description('Start the Telegram bot')
+  .action(async () => {
+    if (!hasTelegramConfig()) {
+      console.log(pc.yellow('No Telegram bot configuration found.'));
+      console.log(`Run ${pc.cyan('remote-opencode telegram setup')} first to configure your Telegram bot.\n`);
+      process.exit(1);
+    }
+
+    await startTelegramBot();
+  });
+
+telegramCmd
+  .command('setup')
+  .description('Interactive setup wizard for Telegram bot configuration')
+  .action(async () => {
+    await runTelegramSetupWizard();
+  });
+
+telegramCmd
+  .command('config')
+  .description('Show Telegram configuration info')
+  .action(() => {
+    console.log(pc.bold('\nTelegram Configuration:'));
+    console.log(`  Config directory: ${pc.cyan(getConfigDir())}`);
+    console.log(`  Telegram bot configured: ${hasTelegramConfig() ? pc.green('Yes') : pc.red('No')}`);
+    console.log();
+  });
+
 program
   .action(async () => {
-    if (!hasBotConfig()) {
+    if (!hasBotConfig() && !hasTelegramConfig()) {
       console.log(pc.bold('\nWelcome to remote-opencode!\n'));
       console.log('It looks like this is your first time running the bot.');
-      console.log(`Run ${pc.cyan('remote-opencode setup')} to configure your Discord bot.\n`);
+      console.log(`Run ${pc.cyan('remote-opencode configure')} to set up everything in one go.\n`);
       console.log('Available commands:');
-      console.log(`  ${pc.cyan('remote-opencode setup')}   - Interactive setup wizard`);
-      console.log(`  ${pc.cyan('remote-opencode start')}   - Start the bot`);
-      console.log(`  ${pc.cyan('remote-opencode deploy')}  - Deploy slash commands`);
-      console.log(`  ${pc.cyan('remote-opencode config')}  - Show configuration`);
+      console.log(`  ${pc.cyan('remote-opencode configure')}         - Interactive config wizard (recommended)`);
+      console.log(`  ${pc.cyan('remote-opencode setup')}             - Discord-only setup wizard`);
+      console.log(`  ${pc.cyan('remote-opencode start')}             - Start the Discord bot`);
+      console.log(`  ${pc.cyan('remote-opencode telegram start')}    - Start the Telegram bot`);
+      console.log(`  ${pc.cyan('remote-opencode config')}            - Show configuration`);
       console.log();
       process.exit(0);
     }
     
-    await startBot();
+    if (hasBotConfig()) {
+      await startBot();
+    } else if (hasTelegramConfig()) {
+      console.log(pc.yellow('No Discord config found, but Telegram is configured.'));
+      console.log(`Run ${pc.cyan('remote-opencode telegram start')} to start the Telegram bot.\n`);
+      process.exit(0);
+    }
   });
 
 program.parse();
