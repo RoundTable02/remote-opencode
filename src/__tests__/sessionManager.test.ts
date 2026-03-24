@@ -138,6 +138,69 @@ describe('SessionManager', () => {
       );
     });
 
+    it('should correctly parse short provider IDs like aws/', async () => {
+      mockFetch.mockResolvedValueOnce({ ok: true, status: 204 });
+
+      await sendPrompt(3000, 'ses_abc123', 'test', 'aws/eu.anthropic.claude-sonnet-4-6');
+
+      expect(mockFetch).toHaveBeenCalledWith(
+        'http://127.0.0.1:3000/session/ses_abc123/prompt_async',
+        expect.objectContaining({
+          body: JSON.stringify({
+            parts: [{ type: 'text', text: 'test' }],
+            model: { providerID: 'aws', modelID: 'eu.anthropic.claude-sonnet-4-6' },
+          }),
+        })
+      );
+    });
+
+    it('should correctly parse hyphenated provider IDs like azure-gpt/', async () => {
+      mockFetch.mockResolvedValueOnce({ ok: true, status: 204 });
+
+      await sendPrompt(3000, 'ses_abc123', 'test', 'azure-gpt/gpt-5.2');
+
+      expect(mockFetch).toHaveBeenCalledWith(
+        'http://127.0.0.1:3000/session/ses_abc123/prompt_async',
+        expect.objectContaining({
+          body: JSON.stringify({
+            parts: [{ type: 'text', text: 'test' }],
+            model: { providerID: 'azure-gpt', modelID: 'gpt-5.2' },
+          }),
+        })
+      );
+    });
+
+    it('should correctly parse model IDs with colons (version suffixes)', async () => {
+      mockFetch.mockResolvedValueOnce({ ok: true, status: 204 });
+
+      await sendPrompt(3000, 'ses_abc123', 'test', 'aws/eu.anthropic.claude-haiku-4-5-20251001-v1:0');
+
+      expect(mockFetch).toHaveBeenCalledWith(
+        'http://127.0.0.1:3000/session/ses_abc123/prompt_async',
+        expect.objectContaining({
+          body: JSON.stringify({
+            parts: [{ type: 'text', text: 'test' }],
+            model: { providerID: 'aws', modelID: 'eu.anthropic.claude-haiku-4-5-20251001-v1:0' },
+          }),
+        })
+      );
+    });
+
+    it('should not include model in payload when model has no slash', async () => {
+      mockFetch.mockResolvedValueOnce({ ok: true, status: 204 });
+
+      await sendPrompt(3000, 'ses_abc123', 'test', 'invalid-model-no-slash');
+
+      expect(mockFetch).toHaveBeenCalledWith(
+        'http://127.0.0.1:3000/session/ses_abc123/prompt_async',
+        expect.objectContaining({
+          body: JSON.stringify({
+            parts: [{ type: 'text', text: 'test' }],
+          }),
+        })
+      );
+    });
+
     it('should throw error if HTTP request fails', async () => {
       mockFetch.mockResolvedValueOnce({
         ok: false,
