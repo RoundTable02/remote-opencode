@@ -6,6 +6,7 @@ import { createRequire } from 'module';
 import updateNotifier from 'update-notifier';
 import { runSetupWizard } from './setup/wizard.js';
 import { deployCommands } from './setup/deploy.js';
+import { undeployCommands } from './setup/undeploy.js';
 import { startBot } from './bot.js';
 import { hasBotConfig, getConfigDir, getAllowedUserIds, addAllowedUserId, removeAllowedUserId, setAllowedUserIds, getOpenAIApiKey, setOpenAIApiKey, removeOpenAIApiKey } from './services/configStore.js';
 
@@ -66,6 +67,19 @@ program
     }
     
     await deployCommands();
+  });
+
+program
+  .command('undeploy')
+  .description('Remove all slash commands from Discord')
+  .action(async () => {
+    if (!hasBotConfig()) {
+      console.log(pc.yellow('No bot configuration found.'));
+      console.log(`Run ${pc.cyan('remote-opencode setup')} first.\n`);
+      process.exit(1);
+    }
+    
+    await undeployCommands();
   });
 
 program
@@ -180,6 +194,7 @@ program
       console.log(`  ${pc.cyan('remote-opencode setup')}   - Interactive setup wizard`);
       console.log(`  ${pc.cyan('remote-opencode start')}   - Start the bot`);
       console.log(`  ${pc.cyan('remote-opencode deploy')}  - Deploy slash commands`);
+      console.log(`  ${pc.cyan('remote-opencode undeploy')} - Remove slash commands`);
       console.log(`  ${pc.cyan('remote-opencode config')}  - Show configuration`);
       console.log();
       process.exit(0);
