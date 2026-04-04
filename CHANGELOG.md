@@ -2,30 +2,33 @@
 
 All notable changes to this project will be documented in this file.
 
-## [Unreleased]
-
 ## [1.5.2] - 2026-04-05
 
 ### Added
+
 - **`remote-opencode undeploy` CLI Command** (PR #48): Added a new CLI command to remove the bot's slash commands from the configured Discord guild. This makes it easier to cleanly unregister commands during teardown, testing, or bot reconfiguration.
 
 ## [1.5.1] - 2026-03-24
 
 ### Added
+
 - **Proxy Support**: HTTP proxy environments are now supported for Discord and other external API requests via `HTTP_PROXY`, `HTTPS_PROXY`, `ALL_PROXY`, and `NO_PROXY` environment variables. Local `opencode serve` traffic on `localhost`, `127.0.0.1`, and `::1` is automatically excluded from proxying.
 
 ### Fixed
+
 - **Shell Spawn Removed** (PR #42): OpenCode is now launched directly instead of through a shell, fixing service-environment failures. Session recovery consolidated so stale runtime sessions are recreated without resetting stored thread metadata.
 - **Silent Error Swallowing** (PR #36, closes #32): Errors in `updateStreamMessage` (Discord message edits) were silently caught, causing AI responses to appear lost while "Done" still displayed. All edit failures now fall back to sending new messages, ensuring users always see output or error details.
 - **Model Provider Prefix** (PR #35): `/model set` no longer strips the provider prefix (e.g., `opencode/minimax-m2.5-free`), which previously caused "Model not found" errors. Carriage returns (`\r`) in model names are now sanitized consistently across storage and prompt submission.
 - **Duplicate README Content** (PR #41): Removed duplicate lines in the README.
 
 ### Changed
+
 - **Mermaid Diagram**: Replaced the ASCII "How It Works" diagram with a Mermaid flowchart for better rendering on GitHub.
 
 ## [1.5.0] - 2026-03-16
 
 ### Added
+
 - **`/session` Command**: Browse and manage OpenCode CLI sessions directly from Discord.
   - `list`: View all sessions for the current project — merges active server sessions with persisted thread mappings, showing title, session ID, mapped thread, and last-used time.
   - `attach`: Attach an existing CLI session to the current thread via an interactive dropdown menu. Automatically sets `freshContext: false` to preserve conversation continuity.
@@ -36,21 +39,25 @@ All notable changes to this project will be documented in this file.
 - **Autocomplete Handler**: Added generic autocomplete infrastructure to `interactionHandler.ts` — commands can now export an `autocomplete` method.
 
 ### Changed
+
 - **`/model list` Full Display**: Removed the 10-model-per-provider cap. All models are now shown, with automatic message splitting when output exceeds Discord's 2000-character limit.
 - **Model Validation**: `/model set` now validates against a fast in-memory cache instead of a blocking `execSync` call, eliminating interaction timeouts on slow systems.
 
 ### Fixed
+
 - **Autocomplete Timeout**: Prevented Discord autocomplete interaction crashes on cold cache by falling back to an empty response when models haven't loaded yet.
 - **Async Cache Refresh**: Model cache now refreshes asynchronously in the background, preventing the 3-second autocomplete deadline from being exceeded on stale cache.
 
 ## [1.4.3] - 2026-03-16
 
 ### Fixed
+
 - **Session Continuity**: Changed `freshContext` default from `true` to `false` so that conversations within the same Discord thread preserve context by default. Previously, each new message started a fresh session, losing conversation history. Users can still opt into fresh context per thread via `/queue settings fresh_context:True`. (Closes #27)
 
 ## [1.4.0] - 2026-03-10
 
 ### Added
+
 - **Voice Message Transcription (STT)**: Automatically transcribe Discord voice messages to text using OpenAI Whisper API.
   - Send voice messages in `/code` passthrough threads — they are transcribed and processed identically to typed text.
   - 🎙️ reaction indicates transcription in progress; removed on completion.
@@ -64,11 +71,14 @@ All notable changes to this project will be documented in this file.
   - File size validation: rejects files exceeding Whisper's 25MB limit before download.
 
 ### Changed
+
 - **Queue system**: `QueuedMessage` interface extended with `voiceAttachmentUrl` and `voiceAttachmentSize` fields to support deferred voice transcription.
 - **Message handler**: Refactored to check busy state before STT, with error-tolerant reaction helpers (`safeReact`, `safeRemoveReaction`).
+
 ## [1.3.0] - 2026-03-02
 
 ### Added
+
 - **`/diff` Command**: View git diffs directly from Discord — ideal for reviewing AI-made changes on mobile.
   - `target` option: `unstaged` (default), `staged`, or `branch`
   - `stat` option: show `--stat` summary only instead of full diff
@@ -80,6 +90,7 @@ All notable changes to this project will be documented in this file.
 ## [1.2.0] - 2026-02-15
 
 ### Added
+
 - **Access Control (Allowlist)**: Restrict bot usage to specific Discord users via a user ID allowlist.
   - **Setup wizard** (Step 5): Optionally set a bot owner during initial setup.
   - **CLI commands**: `remote-opencode allow add <userId>`, `remove <userId>`, `list`, and `reset` for managing the allowlist from the terminal.
@@ -90,6 +101,7 @@ All notable changes to this project will be documented in this file.
   - Cannot remove the last allowed user via Discord (prevents lockout).
 
 ### Security
+
 - Initial allowlist setup **must** be done via the CLI (`remote-opencode allow add`) or the setup wizard (`remote-opencode setup`). The Discord `/allow` command is intentionally disabled when the allowlist is empty to prevent unauthorized users from bootstrapping access.
 - Config directory (`~/.remote-opencode/`) is created with `0700` permissions (owner-only access).
 - Config file (`config.json`) is written with `0600` permissions (owner read/write only).
@@ -98,16 +110,19 @@ All notable changes to this project will be documented in this file.
 ## [1.1.1] - 2026-02-11
 
 ### Added
+
 - **Context Header**: All execution messages now display the current branch name and AI model at the top (e.g. `🌿 feature/dark-mode · 🤖 claude-sonnet-4-20250514`).
 - `getCurrentBranch()` utility in `worktreeManager` to resolve the active git branch via `git rev-parse --abbrev-ref HEAD`.
 - `buildContextHeader()` formatter in `messageFormatter` for consistent header rendering.
 
 ### Changed
+
 - Replaced inline `(Model: ...)` suffix with a dedicated context header line across all 7 message states (Starting, Waiting, Sending, Running, Done, Error-SSE, Error-catch).
 
 ## [1.1.0] - 2026-02-05
 
 ### Added
+
 - **Automated Message Queuing**: Added a new system to queue multiple prompts in a thread. If the bot is busy, new messages are automatically queued and processed sequentially.
 - **Fresh Context Mode**: Each queued job can optionally start with a fresh AI conversation context (new session) while maintaining the same code state.
 - **Queue Management**: New `/queue` slash command suite to list, clear, pause, resume, and configure queue settings.
@@ -117,16 +132,19 @@ All notable changes to this project will be documented in this file.
 - **Visual Feedback**: The bot now reacts with `📥` when a message is successfully queued via chat.
 
 ### Changed
+
 - **Refactored Execution Logic**: Moved core prompt execution to a dedicated `executionService` for better reliability and code reuse.
 - **Hardened Server Binding**: Reverted `opencode serve` to use default `127.0.0.1` binding (previously `0.0.0.0`) and updated port availability checks to match, preventing local network exposure.
 
 ## [1.0.11] - 2026-02-04
 
 ### Added
+
 - Model confirmation in Discord messages: The bot now displays which model is being used when starting a session.
 - Real-time logging: Added always-on logging for `opencode serve` startup commands, working directories, and process output (stdout/stderr) for easier debugging.
 
 ### Fixed
+
 - Fixed `opencode serve` startup failures: The bot now correctly detects when the server fails to start immediately and reports the actual error message to Discord instead of timing out after 30 seconds.
 - Resolved `--model` flag error: Moved model selection from the `opencode serve` command (where it was unsupported) to the prompt API.
 - Fixed Model API format: Correctly formatted model identifiers as objects (`{ providerID, modelID }`) as required by the OpenCode API.
@@ -137,9 +155,11 @@ All notable changes to this project will be documented in this file.
 ## [1.0.10] - 2026-02-04
 
 ### Added
+
 - New `/setports` slash command to configure the port range for OpenCode server instances.
 
 ### Fixed
+
 - Fixed Windows-specific spawning issue where the bot failed to find the `opencode` command (now targeting `opencode.cmd`).
 - Resolved `spawn EINVAL` errors on Windows by correctly configuring shell execution.
 - Fixed a crash where the bot would attempt to pass an unsupported `--model` flag to `opencode serve`.
@@ -150,11 +170,13 @@ All notable changes to this project will be documented in this file.
 ## [1.0.9] - 2026-02-04
 
 ### Added
+
 - New `/model` slash command to list and set AI models per channel.
 - Support for `--model` flag in OpenCode server instances.
 - Persistent storage for channel-specific model preferences.
 
 ### Fixed
+
 - Fixed a connection timeout issue where the bot failed to connect to the internal `opencode serve` process.
 - Added `--hostname 0.0.0.0` to the `opencode serve` command to ensure the service is reachable.
 - Standardized internal communication to use `127.0.0.1` instead of `localhost` to avoid IPv6 resolution conflicts on some systems.
