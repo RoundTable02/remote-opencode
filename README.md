@@ -175,6 +175,7 @@ If you prefer manual setup or need to troubleshoot:
 | `remote-opencode setup`                 | Interactive setup wizard — configures bot token, IDs |
 | `remote-opencode start`                 | Start the Discord bot                                |
 | `remote-opencode deploy`                | Deploy/update slash commands to Discord              |
+| `remote-opencode undeploy`              | Remove slash commands from Discord                  |
 | `remote-opencode config`                | Display current configuration info                   |
 | `remote-opencode allow add <userId>`    | Add a Discord user ID to the allowlist               |
 | `remote-opencode allow remove <userId>` | Remove a Discord user ID from the allowlist          |
